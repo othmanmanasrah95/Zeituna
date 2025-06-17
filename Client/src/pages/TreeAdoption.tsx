@@ -1,0 +1,427 @@
+import React, { useState } from 'react';
+import { MapPin, Calendar, Leaf, Heart, Users, Award, TreePine, Camera } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useCart } from '../contexts/CartContext';
+
+interface Tree {
+  id: string;
+  name: string;
+  species: string;
+  location: string;
+  plantedDate: string;
+  age: string;
+  height: string;
+  co2Absorbed: string;
+  adoptionPrice: number;
+  image: string;
+  description: string;
+  benefits: string[];
+  adopters: number;
+  maxAdopters: number;
+  progress: number;
+}
+
+const mockTrees: Tree[] = [
+  {
+    id: 't1',
+    name: 'Mediterranean Oak "Sophia"',
+    species: 'Quercus ilex',
+    location: 'Sierra Nevada, Spain',
+    plantedDate: '2023-03-15',
+    age: '2 years',
+    height: '1.8m',
+    co2Absorbed: '25kg/year',
+    adoptionPrice: 45.00,
+    image: 'https://images.pexels.com/photos/3338681/pexels-photo-3338681.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=2',
+    description: 'A young Mediterranean oak that will grow to provide shade and habitat for local wildlife.',
+    benefits: ['Carbon sequestration', 'Wildlife habitat', 'Soil erosion prevention', 'Air purification'],
+    adopters: 8,
+    maxAdopters: 10,
+    progress: 80
+  },
+  {
+    id: 't2',
+    name: 'Pine Forest Guardian "Atlas"',
+    species: 'Pinus pinea',
+    location: 'Tuscany, Italy',
+    plantedDate: '2022-11-20',
+    age: '3 years',
+    height: '2.5m',
+    co2Absorbed: '35kg/year',
+    adoptionPrice: 60.00,
+    image: 'https://images.pexels.com/photos/1426718/pexels-photo-1426718.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=2',
+    description: 'A majestic stone pine that will eventually produce pine nuts and provide Mediterranean charm.',
+    benefits: ['Pine nut production', 'Landscape beauty', 'Carbon storage', 'Cultural heritage'],
+    adopters: 12,
+    maxAdopters: 15,
+    progress: 75
+  },
+  {
+    id: 't3',
+    name: 'Olive Heritage "Luna"',
+    species: 'Olea europaea',
+    location: 'Andalusia, Spain',
+    plantedDate: '2023-09-10',
+    age: '1.5 years',
+    height: '1.2m',
+    co2Absorbed: '20kg/year',
+    adoptionPrice: 55.00,
+    image: 'https://images.pexels.com/photos/4464816/pexels-photo-4464816.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=2',
+    description: 'A young olive tree that will produce olives for generations while preserving traditional agriculture.',
+    benefits: ['Olive production', 'Traditional farming', 'Drought resistance', 'Cultural value'],
+    adopters: 6,
+    maxAdopters: 8,
+    progress: 85
+  },
+  {
+    id: 't4',
+    name: 'Cork Oak "Terra"',
+    species: 'Quercus suber',
+    location: 'Alentejo, Portugal',
+    plantedDate: '2023-01-25',
+    age: '2.2 years',
+    height: '1.5m',
+    co2Absorbed: '30kg/year',
+    adoptionPrice: 70.00,
+    image: 'https://images.pexels.com/photos/1563356/pexels-photo-1563356.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=2',
+    description: 'A cork oak that will provide sustainable cork harvest while supporting biodiversity.',
+    benefits: ['Cork production', 'Biodiversity support', 'Fire resistance', 'Economic sustainability'],
+    adopters: 4,
+    maxAdopters: 12,
+    progress: 33
+  }
+];
+
+const impactStats = [
+  { icon: TreePine, value: '2,847', label: 'Trees Planted', color: 'text-green-600' },
+  { icon: Users, value: '1,205', label: 'Active Adopters', color: 'text-blue-600' },
+  { icon: Leaf, value: '45.2t', label: 'CO₂ Absorbed', color: 'text-purple-600' },
+  { icon: Award, value: '156', label: 'Hectares Reforested', color: 'text-orange-600' }
+];
+
+export default function TreeAdoption() {
+  const [selectedTree, setSelectedTree] = useState<Tree | null>(null);
+  const { addItem } = useCart();
+
+  const handleAdoptTree = (tree: Tree) => {
+    addItem({
+      id: tree.id,
+      name: `Tree Adoption - ${tree.name}`,
+      price: tree.adoptionPrice,
+      image: tree.image,
+      type: 'tree'
+    });
+    setSelectedTree(null);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
+      {/* Hero Section */}
+      <section className="relative py-20 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <motion.h1
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="text-4xl md:text-6xl font-bold text-gray-900 mb-6"
+            >
+              Adopt a Tree,
+              <span className="text-green-600"> Grow Hope</span>
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="text-xl text-gray-600 max-w-3xl mx-auto mb-8"
+            >
+              Join our reforestation mission by adopting a tree. Track its growth, receive updates, 
+              and contribute to a more sustainable future for our planet.
+            </motion.p>
+          </div>
+        </div>
+      </section>
+
+      {/* Impact Stats */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {impactStats.map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                className="text-center"
+              >
+                <div className={`w-16 h-16 ${stat.color.replace('text-', 'bg-').replace('-600', '-100')} rounded-full flex items-center justify-center mx-auto mb-4`}>
+                  <stat.icon className={`w-8 h-8 ${stat.color}`} />
+                </div>
+                <div className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</div>
+                <div className="text-gray-600">{stat.label}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Available Trees */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Choose Your Tree to Adopt
+            </h2>
+            <p className="text-xl text-gray-600">
+              Each tree comes with a certificate, growth tracking, and regular updates
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {mockTrees.map((tree, index) => (
+              <motion.div
+                key={tree.id}
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: index * 0.2 }}
+                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300"
+              >
+                <div className="relative">
+                  <img
+                    src={tree.image}
+                    alt={tree.name}
+                    className="w-full h-64 object-cover"
+                  />
+                  <div className="absolute top-4 left-4 bg-green-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    {tree.species}
+                  </div>
+                  <div className="absolute top-4 right-4 bg-white bg-opacity-90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium text-gray-800">
+                    ${tree.adoptionPrice}
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-1">{tree.name}</h3>
+                      <div className="flex items-center text-gray-600 text-sm">
+                        <MapPin className="w-4 h-4 mr-1" />
+                        {tree.location}
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-gray-600 mb-4">{tree.description}</p>
+
+                  {/* Tree Stats */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-sm text-gray-600">Age</div>
+                      <div className="font-semibold text-gray-900">{tree.age}</div>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-sm text-gray-600">Height</div>
+                      <div className="font-semibold text-gray-900">{tree.height}</div>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-sm text-gray-600">CO₂ Absorbed</div>
+                      <div className="font-semibold text-green-600">{tree.co2Absorbed}</div>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-sm text-gray-600">Planted</div>
+                      <div className="font-semibold text-gray-900">
+                        {new Date(tree.plantedDate).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Adoption Progress */}
+                  <div className="mb-6">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-gray-700">Adoption Progress</span>
+                      <span className="text-sm text-gray-600">
+                        {tree.adopters}/{tree.maxAdopters} adopters
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${tree.progress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Benefits */}
+                  <div className="mb-6">
+                    <h4 className="font-semibold text-gray-900 mb-2">Environmental Benefits:</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {tree.benefits.map((benefit) => (
+                        <span
+                          key={benefit}
+                          className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
+                        >
+                          {benefit}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setSelectedTree(tree)}
+                      className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
+                    >
+                      Learn More
+                    </button>
+                    <button
+                      onClick={() => handleAdoptTree(tree)}
+                      className="flex items-center justify-center px-6 py-3 border-2 border-green-600 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-colors"
+                    >
+                      <Heart className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              How Tree Adoption Works
+            </h2>
+            <p className="text-xl text-gray-600">
+              Simple steps to make a lasting environmental impact
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                step: 1,
+                title: 'Choose Your Tree',
+                description: 'Browse available trees and select one that resonates with you',
+                icon: TreePine
+              },
+              {
+                step: 2,
+                title: 'Adopt & Track',
+                description: 'Complete adoption and receive your certificate with GPS coordinates',
+                icon: Award
+              },
+              {
+                step: 3,
+                title: 'Watch It Grow',
+                description: 'Get regular updates with photos and growth measurements',
+                icon: Camera
+              }
+            ].map((step) => (
+              <motion.div
+                key={step.step}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: step.step * 0.2 }}
+                className="text-center"
+              >
+                <div className="w-16 h-16 bg-green-600 text-white rounded-full flex items-center justify-center mx-auto mb-6 text-xl font-bold">
+                  {step.step}
+                </div>
+                <step.icon className="w-12 h-12 text-green-600 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">{step.title}</h3>
+                <p className="text-gray-600">{step.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Tree Detail Modal */}
+      {selectedTree && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          onClick={() => setSelectedTree(null)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative">
+              <img
+                src={selectedTree.image}
+                alt={selectedTree.name}
+                className="w-full h-64 object-cover rounded-t-2xl"
+              />
+              <button
+                onClick={() => setSelectedTree(null)}
+                className="absolute top-4 right-4 bg-white bg-opacity-90 backdrop-blur-sm w-10 h-10 rounded-full flex items-center justify-center hover:bg-opacity-100 transition-colors"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedTree.name}</h2>
+              <p className="text-gray-600 mb-6">{selectedTree.description}</p>
+
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-sm text-gray-600 mb-1">Species</div>
+                  <div className="font-semibold">{selectedTree.species}</div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-sm text-gray-600 mb-1">Location</div>
+                  <div className="font-semibold">{selectedTree.location}</div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-sm text-gray-600 mb-1">Age</div>
+                  <div className="font-semibold">{selectedTree.age}</div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-sm text-gray-600 mb-1">Height</div>
+                  <div className="font-semibold">{selectedTree.height}</div>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-900 mb-3">Environmental Benefits</h3>
+                <div className="space-y-2">
+                  {selectedTree.benefits.map((benefit) => (
+                    <div key={benefit} className="flex items-center">
+                      <Leaf className="w-4 h-4 text-green-600 mr-2" />
+                      <span className="text-gray-700">{benefit}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  onClick={() => handleAdoptTree(selectedTree)}
+                  className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  Adopt for ${selectedTree.adoptionPrice}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </div>
+  );
+}
