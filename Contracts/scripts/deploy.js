@@ -1,27 +1,31 @@
-const { ethers } = require("hardhat");
+const hre = require("hardhat");
 
 async function main() {
-    const [deployer] = await ethers.getSigners();
-    console.log("Deploying contracts with the account:", deployer.address);
+    const [deployer] = await hre.ethers.getSigners();
 
-    // Deploy TUT Token
-    const TUTToken = await ethers.getContractFactory("TUTToken");
-    const platformWallet = "0x..."; // Replace with actual platform wallet
-    const vendorWallet = "0x...";   // Replace with actual vendor wallet
-    const tutToken = await TUTToken.deploy(platformWallet, vendorWallet);
-    await tutToken.waitForDeployment();
-    console.log("TUT Token deployed to:", await tutToken.getAddress());
+    const TUT = await hre.ethers.getContractFactory("TUTToken");
+    const tut = await TUT.deploy(deployer.address);
+    await tut.deployed();
 
-    // Deploy ZYT Token
-    const ZYTToken = await ethers.getContractFactory("ZYTToken");
-    const zytToken = await ZYTToken.deploy();
-    await zytToken.waitForDeployment();
-    console.log("ZYT Token deployed to:", await zytToken.getAddress());
+    const ZYT = await hre.ethers.getContractFactory("ZYTTreeNFT");
+    const zyt = await ZYT.deploy(deployer.address);
+    await zyt.deployed();
+
+    const tourathWallet = deployer.address;
+
+    const Platform = await hre.ethers.getContractFactory("ZeitunaPlatform");
+    const platform = await Platform.deploy(tut.address, tourathWallet);
+    await platform.deployed();
+
+    await tut.transferOwnership(platform.address);
+    await zyt.transferOwnership(platform.address);
+
+    console.log("TUTToken deployed to:", tut.address);
+    console.log("ZYTTreeNFT deployed to:", zyt.address);
+    console.log("ZeitunaPlatform deployed to:", platform.address);
 }
 
-main()
-    .then(() => process.exit(0))
-    .catch((error) => {
-        console.error(error);
-        process.exit(1);
-    });
+main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+});
