@@ -10,6 +10,7 @@ This guide will walk you through everything you need to know to deploy, test, an
 2. **Install MetaMask** browser extension: https://metamask.io/
 3. **Install Git**: https://git-scm.com/
 4. **Install Hardhat** globally:
+
 ```bash
 npm install --save-dev hardhat
 ```
@@ -71,6 +72,7 @@ npx hardhat test
 ```
 
 Expected output:
+
 ```
 ✔ should reward TUT based on fiat value
 ✔ should redeem TUT and increase totalRedeemed
@@ -85,6 +87,7 @@ Expected output:
 1. Get an API key from [Infura](https://infura.io/) or [Alchemy](https://alchemy.com/)
 2. Fund your MetaMask wallet with test ETH from [Sepolia Faucet](https://sepoliafaucet.com/)
 3. Create `.env` file:
+
 ```env
 PRIVATE_KEY=your_metamask_private_key
 INFURA_API_KEY=your_infura_key
@@ -107,9 +110,9 @@ module.exports = {
   networks: {
     sepolia: {
       url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts: [process.env.PRIVATE_KEY]
-    }
-  }
+      accounts: [process.env.PRIVATE_KEY],
+    },
+  },
 };
 ```
 
@@ -174,25 +177,25 @@ await zyt.mintTree(userAddress, metadataURI);
 
 ## 📌 Summary of Main Methods
 
-| Contract           | Method                 | Usage                        |
-|--------------------|------------------------|------------------------------|
-| `TUTToken`         | `balanceOf()`          | Check token balance          |
-|                    | `approve()`            | Allow spending TUT           |
-| `ZeitunaPlatform`  | `rewardUser()`         | Mint TUT after fiat purchase |
-|                    | `redeemTUT()`          | Redeem TUT for discount      |
-| `ZYTTreeNFT`       | `mintTree()`           | Mint NFT after tree adoption |
+| Contract          | Method         | Usage                        |
+| ----------------- | -------------- | ---------------------------- |
+| `TUTToken`        | `balanceOf()`  | Check token balance          |
+|                   | `approve()`    | Allow spending TUT           |
+| `ZeitunaPlatform` | `rewardUser()` | Mint TUT after fiat purchase |
+|                   | `redeemTUT()`  | Redeem TUT for discount      |
+| `ZYTTreeNFT`      | `mintTree()`   | Mint NFT after tree adoption |
 
 ---
 
 ## 📈 Loyalty Tiers (Discount Multipliers)
 
-| Total Redeemed TUT | Exchange Rate |
-|--------------------|----------------|
-| 0–10 TUT           | 1 TUT = 1 ILS   |
-| 11–20 TUT          | 1 TUT = 1.25 ILS|
-| 21–50 TUT          | 1 TUT = 1.5 ILS |
-| 51–100 TUT         | 1 TUT = 1.75 ILS|
-| 100+ TUT           | 1 TUT = 2 ILS   |
+| Total Redeemed TUT | Exchange Rate    |
+| ------------------ | ---------------- |
+| 0–10 TUT           | 1 TUT = 1 ILS    |
+| 11–20 TUT          | 1 TUT = 1.25 ILS |
+| 21–50 TUT          | 1 TUT = 1.5 ILS  |
+| 51–100 TUT         | 1 TUT = 1.75 ILS |
+| 100+ TUT           | 1 TUT = 2 ILS    |
 
 ---
 
