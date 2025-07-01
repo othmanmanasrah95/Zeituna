@@ -1,48 +1,59 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-// OpenZeppelin imports
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ZYTTreeNFT is ERC721URIStorage, Ownable {
-    uint256 public nextTokenId = 1;
-    mapping(uint256 => bool) public isAdopted;
+contract ZYTTreeNFT is ERC721, Ownable {
+    address public immutable _owner;
+    uint256 private _tokenIdCounter;
 
-    event TreeAdopted(address indexed user, uint256 tokenId, string uri);
-    event TreeUnadopted(address indexed user, uint256 tokenId);
+    // === Constants for clarity ===
+    // uint256 public constant ADOPTION_FEE = 99 * 1e18; // $99 annual fiat
+    // uint256 public constant PLANT_A_TREE_FEE = 199 * 1e18; // $199 fiat
+    // uint256 public constant TRH_REWARD_ADOPTION = 5; // one-time
+    // uint256 public constant TRH_REWARD_PLANT = 10; // one-time
+    // uint256 public constant OLIVE_OIL_REWARD_ADOPTION = 750; // in ml
+    // uint256 public constant OLIVE_OIL_REWARD_PLANT = 1000; // in ml
 
-    constructor(
-        address initialOwner
-    ) ERC721("Zeituna Tree NFT", "ZYT") Ownable(initialOwner) {}
+    mapping(uint256 => uint256) public adoptionTimestamp;
 
-    /// @notice Mint a new NFT for a tree adoption
-    function mintTreeNFT(
-        address to,
-        string memory tokenURI
-    ) external onlyOwner returns (uint256) {
-        uint256 tokenId = nextTokenId;
-        _safeMint(to, tokenId);
-        _setTokenURI(tokenId, tokenURI);
+    event Adopted(uint256 indexed tokenId, address indexed newOwner);
+    event Unadopted(uint256 indexed tokenId, address indexed previousOwner);
 
-        isAdopted[tokenId] = true;
-        nextTokenId++;
-
-        emit TreeAdopted(to, tokenId, tokenURI);
-        return tokenId;
+    constructor() ERC721("Zeituna Tree", "ZYT") Ownable(msg.sender) {
+        _owner = msg.sender;
     }
 
-    /// @notice Burn an NFT (e.g. expired adoption or cancellation)
-    function burnTreeNFT(uint256 tokenId) external onlyOwner {
-        address ownerOfToken = ownerOf(tokenId);
-        _burn(tokenId);
-        isAdopted[tokenId] = false;
-
-        emit TreeUnadopted(ownerOfToken, tokenId);
+    modifier onlyOwnerOrTourath() {
+        require(
+            msg.sender == _owner || msg.sender == owner(),
+            "Not authorized"
+        );
+        _;
     }
 
-    /// @notice Check if a tree is currently adopted
-    function isTreeAdopted(uint256 tokenId) external view returns (bool) {
-        return isAdopted[tokenId];
+    function mint(address to) external onlyOwnerOrTourath {
+        _tokenIdCounter++;
+        _safeMint(to, _tokenIdCounter);
+        adoptionTimestamp[_tokenIdCounter] = block.timestamp;
+        emit Adopted(_tokenIdCounter, to);
+    }
+
+    function adopt(
+        uint256 tokenId,
+        address newOwner
+    ) external onlyOwnerOrTourath {
+        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        _transfer(ownerOf(tokenId), newOwner, tokenId);
+        adoptionTimestamp[tokenId] = block.timestamp;
+        emit Adopted(tokenId, newOwner);
+    }
+
+    function unadopt(uint256 tokenId) external onlyOwnerOrTourath {
+        address previousOwner = ownerOf(tokenId);
+        require(previousOwner != address(0), "Token does not exist");
+        _transfer(previousOwner, _owner, tokenId);
+        emit Unadopted(tokenId, previousOwner);
     }
 }
