@@ -14,7 +14,7 @@ const generateToken = (id) => {
 // @access  Public
 exports.register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, walletAddress } = req.body;
 
     // Check if user exists
     const userExists = await User.findOne({ email });
@@ -25,11 +25,24 @@ exports.register = async (req, res) => {
       });
     }
 
+    // Check if wallet address is already in use (if provided)
+    if (walletAddress) {
+      const walletExists = await User.findOne({ walletAddress });
+      if (walletExists) {
+        return res.status(400).json({
+          success: false,
+          error: 'Wallet address is already connected to another account'
+        });
+      }
+    }
+
     // Create user
     const user = await User.create({
       name,
       email,
-      password
+      password,
+      walletAddress: walletAddress || null,
+      walletConnected: !!walletAddress
     });
 
     // Create token balance
@@ -45,7 +58,63 @@ exports.register = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        walletAddress: user.walletAddress,
+        walletConnected: user.walletConnected,
         token: generateToken(user._id)
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+// @desc    Connect wallet to existing user
+// @route   POST /api/auth/connect-wallet
+// @access  Private
+exports.connectWallet = async (req, res) => {
+  try {
+    const { walletAddress } = req.body;
+
+    if (!walletAddress) {
+      return res.status(400).json({
+        success: false,
+        error: 'Wallet address is required'
+      });
+    }
+
+    // Check if wallet address is already in use
+    const walletExists = await User.findOne({ walletAddress });
+    if (walletExists) {
+      return res.status(400).json({
+        success: false,
+        error: 'Wallet address is already connected to another account'
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    user.walletAddress = walletAddress;
+    user.walletConnected = true;
+    await user.save();
+
+    res.json({
+      success: true,
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        walletAddress: user.walletAddress,
+        walletConnected: user.walletConnected
       }
     });
   } catch (error) {
