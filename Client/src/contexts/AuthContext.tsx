@@ -6,7 +6,7 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   login: (data: LoginData) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  register: (name: string, email: string, password: string, walletAddress?: string) => Promise<void>;
   logout: () => void;
   clearError: () => void;
 }
@@ -53,11 +53,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (data: RegisterData) => {
+  const register = async (name: string, email: string, password: string, walletAddress?: string) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await authService.register(data);
+      const response = await authService.register({ name, email, password, walletAddress });
       localStorage.setItem('token', response.data.token);
       await loadUser();
     } catch (err: any) {
