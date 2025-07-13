@@ -1,5 +1,24 @@
 const mongoose = require('mongoose');
 
+const reviewSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  rating: {
+    type: Number,
+    required: true,
+    min: 1,
+    max: 5
+  },
+  comment: String,
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
 const productSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -12,7 +31,15 @@ const productSchema = new mongoose.Schema({
   },
   price: {
     type: Number,
-    required: [true, 'Please add a price']
+    required: [true, 'Please add a price in ILS']
+  },
+  unit: {
+    type: String,
+    default: ''
+  },
+  availableQty: {
+    type: Number,
+    default: 1
   },
   images: [{
     type: String,
@@ -21,30 +48,18 @@ const productSchema = new mongoose.Schema({
   category: {
     type: String,
     required: [true, 'Please add a category'],
-    enum: ['organic', 'handmade', 'eco-friendly', 'local']
+    enum: ['olive_oil', 'handicraft']
   },
-  rating: {
+  rewardTUTPercent: {
     type: Number,
-    default: 0
+    default: 10, // percentage reward
+    min: 0,
+    max: 100
   },
-  reviews: [{
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
-    rating: {
-      type: Number,
-      required: true,
-      min: 1,
-      max: 5
-    },
-    comment: String,
-    date: {
-      type: Date,
-      default: Date.now
-    }
-  }],
+  tutRewardFixed: {
+    type: Number,
+    default: 0 // fixed TUT reward if needed
+  },
   inStock: {
     type: Boolean,
     default: true
@@ -53,10 +68,10 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  seller: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+  reviews: [reviewSchema],
+  rating: {
+    type: Number,
+    default: 0
   },
   createdAt: {
     type: Date,
@@ -64,12 +79,15 @@ const productSchema = new mongoose.Schema({
   }
 });
 
-// Calculate average rating
-productSchema.pre('save', function(next) {
+// Auto-calculate average rating
+productSchema.pre('save', function (next) {
   if (this.reviews.length > 0) {
-    this.rating = this.reviews.reduce((acc, item) => item.rating + acc, 0) / this.reviews.length;
+    const total = this.reviews.reduce((sum, r) => sum + r.rating, 0);
+    this.rating = total / this.reviews.length;
+  } else {
+    this.rating = 0;
   }
   next();
 });
 
-module.exports = mongoose.model('Product', productSchema); 
+module.exports = mongoose.model('Product', productSchema);

@@ -1,17 +1,8 @@
+const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/user');
-const TokenBalance = require('../models/tokenBalance');
 
-// Generate JWT Token
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d'
-  });
-};
-
-// @desc    Register user
-// @route   POST /api/auth/register
-// @access  Public
+// REGISTER CONTROLLER
 exports.register = async (req, res) => {
   try {
     const { name, email, password, walletAddress } = req.body;
@@ -36,92 +27,32 @@ exports.register = async (req, res) => {
       }
     }
 
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      password,
+    // Create new user and let pre-save hash password
+    const newUser = new User({ name, email, password,
       walletAddress: walletAddress || null,
-      walletConnected: !!walletAddress
-    });
+      walletConnected: !!walletAddress });
+    await newUser.save();
 
-    // Create token balance
-    await TokenBalance.create({
-      user: user._id,
-      balance: 0
+    // Generate token
+    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
+      expiresIn: '1d',
     });
 
     res.status(201).json({
       success: true,
-      data: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
+      message: 'User registered successfully',
+      token,
+      user: {
+        id: newUser._id,
+        name: newUser.name,
         walletAddress: user.walletAddress,
         walletConnected: user.walletConnected,
-        token: generateToken(user._id)
+        email: newUser.email,
       }
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-};
-
-// @desc    Connect wallet to existing user
-// @route   POST /api/auth/connect-wallet
-// @access  Private
-exports.connectWallet = async (req, res) => {
-  try {
-    const { walletAddress } = req.body;
-
-    if (!walletAddress) {
-      return res.status(400).json({
-        success: false,
-        error: 'Wallet address is required'
-      });
-    }
-
-    // Check if wallet address is already in use
-    const walletExists = await User.findOne({ walletAddress });
-    if (walletExists) {
-      return res.status(400).json({
-        success: false,
-        error: 'Wallet address is already connected to another account'
-      });
-    }
-
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not found'
-      });
-    }
-
-    user.walletAddress = walletAddress;
-    user.walletConnected = true;
-    await user.save();
-
-    res.json({
-      success: true,
-      data: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        walletAddress: user.walletAddress,
-        walletConnected: user.walletConnected
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+  } catch (err) {
+    console.error('Register Error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
@@ -150,10 +81,10 @@ exports.login = async (req, res) => {
       });
     }
 
-    res.json({
-      success: true,
-      data: {
-        _id: user._id,
+    res.status(200).json({
+      token,
+      user: {
+        id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,

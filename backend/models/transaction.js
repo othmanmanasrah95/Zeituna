@@ -6,6 +6,15 @@ const transactionSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+
+  // 🆕 General transaction type
+  type: {
+    type: String,
+    enum: ['product_purchase', 'adoption', 'planting', 'donation'],
+    required: true
+  },
+
+  // Dynamic list of purchased/adopted items
   items: [{
     type: {
       type: String,
@@ -27,24 +36,46 @@ const transactionSchema = new mongoose.Schema({
       required: true
     }
   }],
+
   totalAmount: {
     type: Number,
     required: true
   },
+
+  // 🆕 Optional discount field (in TUT)
+  tutUsed: {
+    type: Number,
+    default: 0
+  },
+
+  // 🆕 Optional token reward granted after this transaction
+  tokenReward: {
+    type: Number,
+    default: 0
+  },
+
+  // 🆕 Related NFT if applicable (for tree adoption)
+  relatedNFT: {
+    type: String // could be token ID or IPFS hash
+  },
+
   status: {
     type: String,
     enum: ['pending', 'processing', 'completed', 'cancelled'],
     default: 'pending'
   },
+
   paymentMethod: {
     type: String,
     required: true
   },
+
   paymentStatus: {
     type: String,
     enum: ['pending', 'completed', 'failed'],
     default: 'pending'
   },
+
   shippingAddress: {
     street: String,
     city: String,
@@ -52,17 +83,14 @@ const transactionSchema = new mongoose.Schema({
     country: String,
     zipCode: String
   },
-  tokenReward: {
-    type: Number,
-    default: 0
-  },
+
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
 
-// Calculate total amount before saving
+// Auto-calculate total before save
 transactionSchema.pre('save', function(next) {
   if (this.isModified('items')) {
     this.totalAmount = this.items.reduce((total, item) => {
@@ -72,4 +100,4 @@ transactionSchema.pre('save', function(next) {
   next();
 });
 
-module.exports = mongoose.model('Transaction', transactionSchema); 
+module.exports = mongoose.model('Transaction', transactionSchema);
