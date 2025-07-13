@@ -40,27 +40,43 @@ const treeSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please add a description']
   },
-  benefits: [{
-    type: String
-  }],
+  benefits: [String],
+
   adopters: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
+
   maxAdopters: {
     type: Number,
     required: [true, 'Please add maximum number of adopters']
   },
+
   farmer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: [true, 'Please specify the farmer']
   },
+
   status: {
     type: String,
     enum: ['Available', 'Fully Adopted'],
     default: 'Available'
   },
+
+  // 🆕 Type of program this tree belongs to
+  programType: {
+    type: String,
+    enum: ['adoption', 'planting'],
+    default: 'adoption'
+  },
+
+  // 🆕 Who funded the planting (for planting program only)
+  plantedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+
   updates: [{
     date: {
       type: Date,
@@ -70,23 +86,36 @@ const treeSchema = new mongoose.Schema({
     content: String,
     image: String
   }],
+
+  // NFT-related
+  zytTokenId: {
+    type: String
+  },
+  metadataURI: {
+    type: String
+  },
+  nftMinted: {
+    type: Boolean,
+    default: false
+  },
+
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
 
-// Calculate adoption progress
-treeSchema.virtual('progress').get(function() {
+// Virtual: progress %
+treeSchema.virtual('progress').get(function () {
   return (this.adopters.length / this.maxAdopters) * 100;
 });
 
-// Update status when adopters reach max
-treeSchema.pre('save', function(next) {
+// Auto-update status
+treeSchema.pre('save', function (next) {
   if (this.adopters.length >= this.maxAdopters) {
     this.status = 'Fully Adopted';
   }
   next();
 });
 
-module.exports = mongoose.model('Tree', treeSchema); 
+module.exports = mongoose.model('Tree', treeSchema);
