@@ -56,60 +56,6 @@ exports.register = async (req, res) => {
   }
 };
 
-// @desc    Connect wallet to existing user
-// @route   POST /api/auth/connect-wallet
-// @access  Private
-exports.connectWallet = async (req, res) => {
-  try {
-    const { walletAddress } = req.body;
-
-    if (!walletAddress) {
-      return res.status(400).json({
-        success: false,
-        error: 'Wallet address is required'
-      });
-    }
-
-    // Check if wallet address is already in use
-    const walletExists = await User.findOne({ walletAddress });
-    if (walletExists) {
-      return res.status(400).json({
-        success: false,
-        error: 'Wallet address is already connected to another account'
-      });
-    }
-
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not found'
-      });
-    }
-
-    user.walletAddress = walletAddress;
-    user.walletConnected = true;
-    await user.save();
-
-    res.json({
-      success: true,
-      data: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        walletAddress: user.walletAddress,
-        walletConnected: user.walletConnected
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-};
-
 // @desc    Login user
 // @route   POST /api/auth/login
 // @access  Public
