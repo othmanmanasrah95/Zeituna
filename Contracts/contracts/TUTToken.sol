@@ -52,11 +52,4 @@ contract TUTToken is ERC20Capped, Ownable {
     ) external onlyOwner {
         authorizedContracts[contractAddress] = false;
     }
-
-    function _mint(
-        address to,
-        uint256 amount
-    ) internal override(ERC20) {
-        super._mint(to, amount); // Cap enforcement happens here
-    }
 }
