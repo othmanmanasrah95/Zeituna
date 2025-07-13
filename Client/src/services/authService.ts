@@ -7,6 +7,7 @@ export interface LoginData {
 
 export interface RegisterData extends LoginData {
   name: string;
+  walletAddress?: string;
 }
 
 export interface User {
@@ -14,6 +15,8 @@ export interface User {
   name: string;
   email: string;
   role: string;
+  walletAddress?: string;
+  walletConnected?: boolean;
   tokenBalance?: number;
   adoptedTrees?: any[];
   orders?: any[];
@@ -26,6 +29,8 @@ export interface AuthResponse {
     name: string;
     email: string;
     role: string;
+    walletAddress?: string;
+    walletConnected?: boolean;
     token: string;
   };
 }
@@ -63,6 +68,12 @@ const authService = {
   // Update user profile
   updateProfile: async (data: Partial<User>): Promise<AuthResponse> => {
     const response = await api.put('/auth/profile', data);
+    return response.data;
+  },
+
+  // Connect wallet to user account
+  connectWallet: async (walletAddress: string): Promise<AuthResponse> => {
+    const response = await api.post('/auth/connect-wallet', { walletAddress });
     return response.data;
   },
 

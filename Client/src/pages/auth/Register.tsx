@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Lock, Eye, EyeOff, Leaf } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, Leaf, Wallet, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
+import walletService from '../../services/walletService';
+import WalletWarningModal from '../../components/WalletWarningModal';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -15,6 +17,10 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [walletAddress, setWalletAddress] = useState('');
+  const [isWalletConnected, setIsWalletConnected] = useState(false);
+  const [isConnectingWallet, setIsConnectingWallet] = useState(false);
+  const [showWalletWarning, setShowWalletWarning] = useState(false);
   const { register, isLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -23,6 +29,27 @@ export default function Register() {
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  const connectWallet = async () => {
+    setIsConnectingWallet(true);
+    setError('');
+    
+    try {
+      const walletInfo = await walletService.connectWallet();
+      setWalletAddress(walletInfo.address);
+      setIsWalletConnected(true);
+    } catch (err: any) {
+      setError(err.message || 'Failed to connect wallet');
+    } finally {
+      setIsConnectingWallet(false);
+    }
+  };
+
+  const disconnectWallet = () => {
+    walletService.disconnectWallet();
+    setWalletAddress('');
+    setIsWalletConnected(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,12 +76,29 @@ export default function Register() {
       return;
     }
 
-    try {
-      await register(formData.name, formData.email, formData.password);
-      navigate('/');
-    } catch (err) {
-      setError('Registration failed. Please try again.');
+    // Show wallet warning if not connected
+    if (!isWalletConnected) {
+      setShowWalletWarning(true);
+      return;
     }
+
+    try {
+      await register(formData.name, formData.email, formData.password, walletAddress);
+      navigate('/');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Registration failed. Please try again.');
+    }
+  };
+
+  const handleSkipWallet = () => {
+    setShowWalletWarning(false);
+    // Continue with registration without wallet
+    register(formData.name, formData.email, formData.password);
+  };
+
+  const handleConnectWalletFromWarning = () => {
+    setShowWalletWarning(false);
+    connectWallet();
   };
 
   return (
@@ -190,6 +234,53 @@ export default function Register() {
               </div>
             </div>
 
+            {/* Wallet Connection Section */}
+            <div className="border-t pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  MetaMask Wallet
+                </label>
+                {isWalletConnected && (
+                  <div className="flex items-center space-x-1 text-green-600">
+                    <CheckCircle className="w-4 h-4" />
+                    <span className="text-xs font-medium">Connected</span>
+                  </div>
+                )}
+              </div>
+
+              {!isWalletConnected ? (
+                <button
+                  type="button"
+                  onClick={connectWallet}
+                  disabled={isConnectingWallet}
+                  className="w-full flex items-center justify-center space-x-2 bg-orange-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Wallet className="w-5 h-5" />
+                  <span>{isConnectingWallet ? 'Connecting...' : 'Connect MetaMask Wallet'}</span>
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <p className="text-green-800 text-sm font-medium">Wallet Connected</p>
+                    <p className="text-green-700 text-xs mt-1 break-all">
+                      {walletAddress}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={disconnectWallet}
+                    className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+                  >
+                    Disconnect Wallet
+                  </button>
+                </div>
+              )}
+
+              <p className="text-xs text-gray-500 mt-2">
+                Connecting your wallet enables TUT token rewards and NFT ownership
+              </p>
+            </div>
+
             <div className="flex items-start">
               <input
                 id="terms"
@@ -229,6 +320,13 @@ export default function Register() {
           </div>
         </motion.form>
       </motion.div>
+
+      <WalletWarningModal
+        isOpen={showWalletWarning}
+        onClose={() => setShowWalletWarning(false)}
+        onSkip={handleSkipWallet}
+        onConnect={handleConnectWalletFromWarning}
+      />
     </div>
   );
 }

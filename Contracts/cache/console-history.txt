@@ -1,0 +1,3 @@
+(await TUT.balanceOf("your-wallet-address")).toString()
+(await TUT.totalSupply()).toString()
+const TUT = await ethers.getContractAt("TUTToken", "0x4CB2ddc27bCb5b0DC03953F8aC1D903A0a49aDb0");

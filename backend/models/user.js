@@ -21,6 +21,16 @@ const userSchema = new mongoose.Schema({
     minlength: 6,
     select: false
   },
+  walletAddress: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    match: [/^0x[a-fA-F0-9]{40}$/, 'Please provide a valid Ethereum address']
+  },
+  walletConnected: {
+    type: Boolean,
+    default: false
+  },
   role: {
     type: String,
     enum: ['user', 'admin'],
