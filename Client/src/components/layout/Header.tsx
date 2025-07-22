@@ -32,9 +32,7 @@ export default function Header() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-              <Leaf className="w-5 h-5 text-white" />
-            </div>
+            <img src="/tree1.png" alt="Zeituna Logo" className="w-10 h-10 object-contain" />
             <span className="text-xl font-bold text-gray-800">Zeituna</span>
           </Link>
 

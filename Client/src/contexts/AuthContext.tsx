@@ -4,6 +4,7 @@ import authService, { User, LoginData, RegisterData } from '../services/authServ
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isLoading: boolean;
   error: string | null;
   login: (data: LoginData) => Promise<void>;
   register: (name: string, email: string, password: string, walletAddress?: string) => Promise<void>;
@@ -82,6 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         loading,
+        isLoading: loading,
         error,
         login,
         register,

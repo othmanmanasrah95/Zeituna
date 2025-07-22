@@ -95,14 +95,6 @@ const mockProducts: Product[] = [
   }
 ];
 
-const categories = [
-  { id: 'all', name: 'All Products' },
-  { id: 'organic', name: 'Organic' },
-  { id: 'handmade', name: 'Handmade' },
-  { id: 'eco-friendly', name: 'Eco-Friendly' },
-  { id: 'local', name: 'Local Products' }
-];
-
 const sortOptions = [
   { id: 'featured', name: 'Featured' },
   { id: 'price-low', name: 'Price: Low to High' },
@@ -115,37 +107,25 @@ export default function Marketplace() {
   const [searchParams] = useSearchParams();
   const { addItem } = useCart();
   
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
   const [sortBy, setSortBy] = useState('featured');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [showFilters, setShowFilters] = useState(false);
-  const [priceRange, setPriceRange] = useState([0, 100]);
-  const [showInStockOnly, setShowInStockOnly] = useState(false);
+  const [productType, setProductType] = useState<'olive' | 'handcrafts'>('olive');
 
   const searchQuery = searchParams.get('search') || '';
 
   const filteredAndSortedProducts = useMemo(() => {
     let filtered = mockProducts.filter(product => {
-      // Category filter
-      if (selectedCategory !== 'all' && product.category !== selectedCategory) {
+      // Product type filter
+      if (productType === 'olive' && !product.name.toLowerCase().includes('olive oil')) {
         return false;
       }
-
+      if (productType === 'handcrafts' && product.name.toLowerCase().includes('olive oil')) {
+        return false;
+      }
       // Search filter
       if (searchQuery && !product.name.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false;
       }
-
-      // Price range filter
-      if (product.price < priceRange[0] || product.price > priceRange[1]) {
-        return false;
-      }
-
-      // Stock filter
-      if (showInStockOnly && !product.inStock) {
-        return false;
-      }
-
       return true;
     });
 
@@ -168,7 +148,7 @@ export default function Marketplace() {
     }
 
     return filtered;
-  }, [selectedCategory, searchQuery, sortBy, priceRange, showInStockOnly]);
+  }, [searchQuery, sortBy, productType]);
 
   const handleAddToCart = (product: Product) => {
     addItem({
@@ -181,48 +161,24 @@ export default function Marketplace() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Header with Glow */}
+        <div className="relative mb-12 flex flex-col items-center text-center">
+          <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-72 h-72 bg-green-300 opacity-20 rounded-full blur-3xl animate-pulse z-0" />
+          <h1 className="relative z-10 text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 drop-shadow-lg tracking-tight">
             {searchQuery ? `Search results for "${searchQuery}"` : 'Marketplace'}
           </h1>
-          <p className="text-gray-600">
-            Discover sustainable products from local artisans and eco-friendly brands
+          <p className="relative z-10 text-xl text-green-900 max-w-2xl mx-auto font-medium mb-2">
+            Discover sustainable, premium products from local artisans and eco-friendly brands.
           </p>
         </div>
 
         {/* Filters and Controls */}
-        <div className="bg-white rounded-lg shadow-sm border p-4 mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-            {/* Category Filters */}
-            <div className="flex flex-wrap gap-2">
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    selectedCategory === category.id
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {category.name}
-                </button>
-              ))}
-            </div>
-
+        <div className="flex justify-center mb-12">
+          <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-green-100 p-4 inline-flex items-center space-x-4">
             {/* Controls */}
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <Filter className="w-4 h-4 mr-2" />
-                Filters
-              </button>
-
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -249,48 +205,22 @@ export default function Marketplace() {
                   <List className="w-4 h-4" />
                 </button>
               </div>
+              <div className="inline-flex bg-green-100 rounded-full p-1 shadow-md mr-4">
+                <button
+                  className={`px-6 py-2 rounded-full font-semibold text-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-400 ${productType === 'olive' ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white shadow' : 'bg-transparent text-green-900 hover:bg-green-200'}`}
+                  onClick={() => setProductType('olive')}
+                >
+                  Olive Oil
+                </button>
+                <button
+                  className={`px-6 py-2 rounded-full font-semibold text-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-400 ${productType === 'handcrafts' ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white shadow' : 'bg-transparent text-green-900 hover:bg-green-200'}`}
+                  onClick={() => setProductType('handcrafts')}
+                >
+                  Hand Crafts
+                </button>
+              </div>
             </div>
           </div>
-
-          {/* Advanced Filters */}
-          {showFilters && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-4 pt-4 border-t border-gray-200"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Price Range: ${priceRange[0]} - ${priceRange[1]}
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="5"
-                    value={priceRange[1]}
-                    onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                    className="w-full"
-                  />
-                </div>
-                
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="inStock"
-                    checked={showInStockOnly}
-                    onChange={(e) => setShowInStockOnly(e.target.checked)}
-                    className="mr-2"
-                  />
-                  <label htmlFor="inStock" className="text-sm text-gray-700">
-                    In stock only
-                  </label>
-                </div>
-              </div>
-            </motion.div>
-          )}
         </div>
 
         {/* Results Count */}
@@ -301,7 +231,7 @@ export default function Marketplace() {
         </div>
 
         {/* Products Grid/List */}
-        <div className={`grid gap-6 ${
+        <div className={`grid gap-8 ${
           viewMode === 'grid' 
             ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
             : 'grid-cols-1'
@@ -312,7 +242,7 @@ export default function Marketplace() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`bg-white rounded-xl shadow-sm border hover:shadow-lg transition-all duration-300 overflow-hidden group ${
+              className={`backdrop-blur-lg bg-white/70 border border-green-100 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden group ${
                 viewMode === 'list' ? 'flex' : ''
               }`}
             >
@@ -325,18 +255,18 @@ export default function Marketplace() {
                   }`}
                 />
                 {product.featured && (
-                  <div className="absolute top-2 left-2 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-medium">
+                  <div className="absolute top-2 left-2 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-medium shadow">
                     Featured
                   </div>
                 )}
                 {product.originalPrice && (
-                  <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+                  <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium shadow">
                     Sale
                   </div>
                 )}
                 {!product.inStock && (
-                  <div className="absolute inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center">
-                    <span className="text-white font-medium">Out of Stock</span>
+                  <div className="absolute inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center">
+                    <span className="text-white font-semibold text-lg">Out of Stock</span>
                   </div>
                 )}
                 <button className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -344,17 +274,15 @@ export default function Marketplace() {
                 </button>
               </div>
 
-              <div className="p-4 flex-1">
+              <div className="p-6 flex-1">
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-green-600 transition-colors">
+                  <h3 className="text-lg font-bold text-gray-900 group-hover:text-green-700 transition-colors">
                     {product.name}
                   </h3>
                 </div>
-                
-                <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                <p className="text-green-900 text-base mb-3 line-clamp-2">
                   {product.description}
                 </p>
-
                 <div className="flex items-center mb-3">
                   <div className="flex items-center">
                     {[...Array(5)].map((_, i) => (
@@ -370,10 +298,9 @@ export default function Marketplace() {
                     {product.rating} ({product.reviews} reviews)
                   </span>
                 </div>
-
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <span className="text-xl font-bold text-green-600">
+                    <span className="text-2xl font-extrabold text-green-700">
                       ${product.price}
                     </span>
                     {product.originalPrice && (
@@ -382,17 +309,16 @@ export default function Marketplace() {
                       </span>
                     )}
                   </div>
-
                   <button
                     onClick={() => handleAddToCart(product)}
                     disabled={!product.inStock}
-                    className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
+                    className={`flex items-center px-5 py-2 rounded-lg font-semibold text-lg transition-all duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-green-400 ${
                       product.inStock
-                        ? 'bg-green-600 text-white hover:bg-green-700'
+                        ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white hover:from-green-700 hover:to-blue-700 hover:scale-105'
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
                   >
-                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    <ShoppingCart className="w-5 h-5 mr-2" />
                     {viewMode === 'list' ? 'Add to Cart' : ''}
                   </button>
                 </div>
@@ -413,10 +339,7 @@ export default function Marketplace() {
             </p>
             <button
               onClick={() => {
-                setSelectedCategory('all');
                 setSortBy('featured');
-                setPriceRange([0, 100]);
-                setShowInStockOnly(false);
               }}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >

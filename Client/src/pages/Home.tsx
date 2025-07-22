@@ -1,326 +1,208 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Leaf, ShoppingBag, Heart, Users, Star, TreePine, Coins } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ShoppingBag, TreePine, Coins, Heart, Users, Star } from 'lucide-react';
 
 export default function Home() {
+  // Features
   const features = [
     {
-      icon: ShoppingBag,
-      title: 'Sustainable Marketplace',
-      description: 'Discover eco-friendly products from local artisans and sustainable brands.',
-      color: 'bg-blue-500'
+      icon: <ShoppingBag className="w-8 h-8 text-white" />, title: 'Curated Sustainable Marketplace', desc: 'Shop premium, eco-conscious products handpicked for quality and impact.' , color: 'bg-blue-500'
     },
     {
-      icon: TreePine,
-      title: 'Adopt a Tree',
-      description: 'Symbolically adopt an olive tree for $99/year and receive NFT certificates.',
-      color: 'bg-green-500'
+      icon: <TreePine className="w-8 h-8 text-white" />, title: 'Adopt an Olive Tree', desc: 'Make a lasting difference—adopt a tree and receive a unique NFT certificate.', color: 'bg-green-500'
     },
     {
-      icon: Coins,
-      title: 'TUT Token Rewards',
-      description: 'Earn TUT tokens with every adoption and support local farmers directly.',
-      color: 'bg-yellow-500'
+      icon: <Coins className="w-8 h-8 text-white" />, title: 'Direct Farmer Support', desc: 'Connect directly with Palestinian farmers and help sustain traditional agriculture.', color: 'bg-yellow-500'
     },
     {
-      icon: Heart,
-      title: 'Environmental Impact',
-      description: 'Every purchase supports environmental conservation and local communities.',
-      color: 'bg-red-500'
+      icon: <Heart className="w-8 h-8 text-white" />, title: 'Positive Community Impact', desc: 'Your purchases drive real change for the environment and local communities.', color: 'bg-red-500'
     }
   ];
 
-  const stats = [
-    { value: '10K+', label: 'Products Sold' },
-    { value: '2.5K+', label: 'Trees Adopted' },
-    { value: '2K+', label: 'Happy Customers' },
-    { value: '50+', label: 'Local Partners' }
+  // Olive Oil Product Variants
+  const oliveOilVariants = [
+    {
+      size: '250ml',
+      price: 7.99,
+      image: '/oil.png',
+      desc: 'Perfect for tasting or gifting. Premium cold-pressed extra virgin olive oil.'
+    },
+    {
+      size: '500ml',
+      price: 13.99,
+      image: '/oil.png',
+      desc: 'Ideal for daily use in salads and cooking. Fresh, robust flavor.'
+    },
+    {
+      size: '750ml',
+      price: 18.99,
+      image: '/oil.png',
+      desc: 'Great value for families. Sustainably sourced, rich in antioxidants.'
+    },
+    {
+      size: '1L',
+      price: 23.99,
+      image: '/oil.png',
+      desc: 'For the true olive oil lover. Pure, Palestinian taste in every drop.'
+    },
+    {
+      size: '2L',
+      price: 39.99,
+      image: '/oil.png',
+      desc: 'Bulk size for chefs and families. Unmatched quality and freshness.'
+    }
   ];
 
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const selected = oliveOilVariants[selectedIndex];
+
   return (
-    <div className="min-h-screen">
+    <div className="relative min-h-screen bg-black overflow-hidden">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-green-50 to-blue-50 py-20 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              className="space-y-8"
-            >
-              <h1 className="text-4xl md:text-6xl font-bold text-gray-900 leading-tight">
-                Shop with
-                <span className="text-green-600"> Purpose</span>,
-                <br />
-                Grow with
-                <span className="text-blue-600"> Roots</span>
+      <div className="relative min-h-screen flex items-center justify-center">
+        <video
+          className="absolute inset-0 w-full h-full object-cover z-0"
+          src="/assets_task_01k0mvvh89efqadt8dwf17x9kc_task_01k0mvvh89efqadt8dwf17x9kc_genid_b3f2495d-219b-49ef-b888-fdb551baf921_25_07_20_21_31_275149_videos_00000_61819355_source.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/80 z-10" />
+        <div className="relative z-20 flex flex-col items-center justify-center text-center px-4 py-32">
+          <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6 drop-shadow-lg">
+            Experience Sustainable Living with Zeituna
               </h1>
-              <p className="text-xl text-gray-600 leading-relaxed">
-                Discover sustainable products while participating in our Roots Program. 
-                Adopt olive trees, earn TUT tokens, and support local farmers in the Mediterranean.
+          <p className="text-lg md:text-2xl text-gray-200 mb-10 max-w-2xl drop-shadow">
+            Discover a curated selection of eco-friendly products, adopt an olive tree, and earn rewards—while making a positive impact on our planet and supporting Palestinian communities.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   to="/marketplace"
-                  className="inline-flex items-center px-8 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+              className="px-8 py-4 bg-green-600 text-white rounded-lg font-semibold text-lg hover:bg-green-700 transition-all duration-300 shadow-lg"
                 >
                   Explore Marketplace
-                  <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
                 <Link
                   to="/roots"
-                  className="inline-flex items-center px-8 py-4 border-2 border-green-600 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all duration-300 transform hover:scale-105"
+              className="px-8 py-4 bg-white text-green-700 rounded-lg font-semibold text-lg hover:bg-green-100 transition-all duration-300 shadow-lg border border-green-600"
                 >
                   Join Roots Program
-                  <Leaf className="ml-2 w-5 h-5" />
                 </Link>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative"
-            >
-              <img
-                src="https://images.pexels.com/photos/1072179/pexels-photo-1072179.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=2"
-                alt="Sustainable marketplace"
-                className="rounded-2xl shadow-2xl"
-              />
-              <div className="absolute -top-6 -left-6 w-24 h-24 bg-green-500 rounded-full opacity-20 animate-pulse"></div>
-              <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-blue-500 rounded-full opacity-20 animate-pulse animation-delay-1000"></div>
-            </motion.div>
           </div>
         </div>
-      </section>
+                </div>
 
       {/* Features Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Why Choose Zeituna?
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              We're more than just a marketplace – we're a movement towards sustainable living and environmental stewardship.
-            </p>
-          </motion.div>
-
+      <section className="py-20 bg-gradient-to-br from-black via-green-900/80 to-blue-900/80 relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-32 -left-32 w-96 h-96 bg-green-600 opacity-20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-blue-600 opacity-20 rounded-full blur-3xl animate-pulse animation-delay-1000" />
+        </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-4 drop-shadow-lg tracking-tight">Why Zeituna?</h2>
+            <p className="text-xl text-green-100 max-w-2xl mx-auto font-medium">Zeituna empowers you to shop consciously, support local farmers, and join a global movement for a greener tomorrow.</p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => (
-              <motion.div
+            {features.map((feature, i) => (
+              <div
                 key={feature.title}
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: index * 0.2 }}
-                className="text-center group"
+                className="backdrop-blur-lg bg-white/10 border border-white/20 rounded-2xl p-8 flex flex-col items-center text-center shadow-xl hover:scale-105 transition-transform duration-300 group relative overflow-hidden"
+                style={{ animation: `fadeInUp 0.7s ${i * 0.1 + 0.2}s both` }}
               >
-                <div className={`w-16 h-16 ${feature.color} rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                  <feature.icon className="w-8 h-8 text-white" />
+                <div className={`w-16 h-16 ${feature.color} rounded-full flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300 border-4 border-white/30`}>
+                  {feature.icon}
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">{feature.title}</h3>
-                <p className="text-gray-600 leading-relaxed">{feature.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-20 bg-green-600">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8, delay: index * 0.2 }}
-                className="text-center text-white"
-              >
-                <div className="text-4xl md:text-5xl font-bold mb-2">{stat.value}</div>
-                <div className="text-green-100 text-lg">{stat.label}</div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Roots Program Highlight */}
-      <section className="py-20 bg-gradient-to-r from-green-600 to-blue-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-            >
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                Introducing the Roots Program
-              </h2>
-              <p className="text-xl mb-8 leading-relaxed">
-                Adopt an olive tree for just $99/year and become part of our sustainable ecosystem. 
-                Receive NFT certificates, earn TUT tokens, and directly support Mediterranean farmers.
-              </p>
-              <div className="space-y-4 mb-8">
-                <div className="flex items-center">
-                  <TreePine className="w-6 h-6 mr-3" />
-                  <span>Digital NFT Certificate of Adoption</span>
-                </div>
-                <div className="flex items-center">
-                  <Coins className="w-6 h-6 mr-3" />
-                  <span>$33 worth of TUT tokens credited to your wallet</span>
-                </div>
-                <div className="flex items-center">
-                  <Heart className="w-6 h-6 mr-3" />
-                  <span>$33 paid directly to local farmers</span>
-                </div>
+                <h3 className="text-xl font-bold text-white mb-2 drop-shadow">{feature.title}</h3>
+                <p className="text-green-100 leading-relaxed font-medium">{feature.desc}</p>
               </div>
-              <Link
-                to="/roots"
-                className="inline-flex items-center px-8 py-4 bg-white text-green-600 rounded-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105"
-              >
-                Explore Roots Program
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Link>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative"
-            >
-              <img
-                src="https://images.pexels.com/photos/3338681/pexels-photo-3338681.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=2"
-                alt="Olive trees"
-                className="rounded-2xl shadow-2xl"
-              />
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Products Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Featured Products
-            </h2>
-            <p className="text-xl text-gray-600">
-              Discover our most popular sustainable products
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                name: 'Organic Olive Oil',
-                price: 24.99,
-                rating: 4.8,
-                image: 'https://images.pexels.com/photos/33783/olive-oil-salad-dressing-cooking-olive.jpg?auto=compress&cs=tinysrgb&w=400&h=300&dpr=2'
-              },
-              {
-                name: 'Handwoven Basket',
-                price: 45.00,
-                rating: 4.9,
-                image: 'https://images.pexels.com/photos/4465831/pexels-photo-4465831.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&dpr=2'
-              },
-              {
-                name: 'Eco-Friendly Soap Set',
-                price: 18.50,
-                rating: 4.7,
-                image: 'https://images.pexels.com/photos/4465124/pexels-photo-4465124.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&dpr=2'
-              }
-            ].map((product, index) => (
-              <motion.div
-                key={product.name}
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: index * 0.2 }}
-                className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
-              >
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{product.name}</h3>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-2xl font-bold text-green-600">${product.price}</span>
-                    <div className="flex items-center">
-                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                      <span className="ml-1 text-sm text-gray-600">{product.rating}</span>
-                    </div>
-                  </div>
-                  <button className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors">
-                    Add to Cart
-                  </button>
-                </div>
-              </motion.div>
             ))}
           </div>
+        </div>
+        <style>{`
+          @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+      </section>
 
-          <div className="text-center mt-12">
-            <Link
-              to="/marketplace"
-              className="inline-flex items-center px-8 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-300 transform hover:scale-105"
-            >
-              View All Products
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Link>
+      {/* Olive Oil Product Card with Variations */}
+      <section className="py-24 bg-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 drop-shadow-lg tracking-tight">Premium Olive Oil</h2>
+            <p className="text-xl text-gray-600">Select your perfect size and enjoy the finest extra virgin olive oil, directly from our groves to your table.</p>
+          </div>
+          <div className="bg-gradient-to-br from-green-50 via-white to-blue-50 rounded-3xl shadow-xl flex flex-col md:flex-row items-center p-0 md:p-0 animate-fadeInUp overflow-hidden border border-green-100">
+            {/* Product Info Left */}
+            <div className="w-full md:w-1/2 flex flex-col items-start p-8 md:p-12">
+              <h3 className="text-4xl font-extrabold text-green-900 mb-4 tracking-tight">Olive Oil {selected.size}</h3>
+              <p className="text-green-800 mb-8 text-lg min-h-[48px]">{selected.desc}</p>
+              <div className="flex flex-wrap gap-3 mb-8">
+                {oliveOilVariants.map((variant, i) => (
+                  <button
+                    key={variant.size}
+                    onClick={() => setSelectedIndex(i)}
+                    className={`px-5 py-2 rounded-full border font-semibold shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-400 ${selectedIndex === i ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white border-green-700 shadow-lg scale-105' : 'bg-white text-green-900 border-green-200 hover:bg-green-50'}`}
+                  >
+                    {variant.size}
+                  </button>
+                ))}
+              </div>
+              <div className="text-3xl font-extrabold text-green-700 mb-8">${selected.price.toFixed(2)}</div>
+              <button className="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 rounded-lg font-bold text-lg shadow-lg transition-all duration-200 hover:from-green-700 hover:to-blue-700 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400">Add to Cart</button>
+            </div>
+            {/* Divider for desktop */}
+            <div className="hidden md:block h-80 w-px bg-green-100 mx-2 rounded-full" />
+            {/* Image Right - full cover */}
+            <div
+              className="w-full md:w-1/2 min-h-[300px] md:min-h-[480px] h-full"
+              style={{
+                backgroundImage: `url(${selected.image})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+              }}
+              aria-label={`Olive Oil ${selected.size}`}
+            />
           </div>
         </div>
+        <style>{`
+          .animate-fadeInUp {
+            opacity: 0;
+            transform: translateY(40px);
+            animation: fadeInUp 0.8s both;
+          }
+        `}</style>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-green-600 to-blue-600 text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="space-y-8"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold">
-              Ready to Make a Difference?
-            </h2>
-            <p className="text-xl leading-relaxed">
-              Join thousands of conscious consumers who are shopping sustainably and contributing to environmental conservation through our Roots Program.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/register"
-                className="inline-flex items-center px-8 py-4 bg-white text-green-600 rounded-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105"
-              >
-                Get Started Today
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Link>
-              <Link
-                to="/roots/adopt"
-                className="inline-flex items-center px-8 py-4 border-2 border-white text-white rounded-lg hover:bg-white hover:text-green-600 transition-all duration-300 transform hover:scale-105"
-              >
-                Adopt Your First Tree
-                <Leaf className="ml-2 w-5 h-5" />
-              </Link>
-            </div>
-          </motion.div>
+      <section className="py-24 bg-gradient-to-br from-green-900 via-blue-900 to-black relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-32 -left-32 w-96 h-96 bg-green-500 opacity-20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-blue-500 opacity-20 rounded-full blur-3xl animate-pulse animation-delay-1000" />
         </div>
+        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
+          <div className="backdrop-blur-lg bg-white/10 border border-white/20 rounded-3xl p-12 flex flex-col items-center text-center shadow-2xl animate-fadeInUp">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-4 drop-shadow-lg tracking-tight">Ready to Make a Difference?</h2>
+            <p className="text-xl text-green-100 mb-10 font-medium max-w-2xl mx-auto">Become part of a passionate community. Start your sustainable journey with Zeituna and help shape a brighter, greener future for all.</p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center w-full">
+              <Link to="/register" className="flex-1 px-8 py-4 bg-white text-green-700 rounded-lg font-bold text-lg hover:bg-green-100 transition-all duration-300 shadow-lg border border-green-600">Get Started Today</Link>
+              <Link to="/roots/adopt" className="flex-1 px-8 py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-bold text-lg hover:from-green-700 hover:to-blue-700 transition-all duration-300 shadow-lg border border-white/30">Adopt Your First Tree</Link>
+            </div>
+          </div>
+        </div>
+        <style>{`
+          @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          .animate-fadeInUp {
+            animation: fadeInUp 0.8s both;
+          }
+        `}</style>
       </section>
     </div>
   );

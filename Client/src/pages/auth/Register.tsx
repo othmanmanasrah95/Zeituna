@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Lock, Eye, EyeOff, Leaf, Wallet, CheckCircle } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, Wallet } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import walletService from '../../services/walletService';
-import WalletWarningModal from '../../components/WalletWarningModal';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -20,7 +19,6 @@ export default function Register() {
   const [walletAddress, setWalletAddress] = useState('');
   const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [isConnectingWallet, setIsConnectingWallet] = useState(false);
-  const [showWalletWarning, setShowWalletWarning] = useState(false);
   const { register, isLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -44,12 +42,6 @@ export default function Register() {
     } finally {
       setIsConnectingWallet(false);
     }
-  };
-
-  const disconnectWallet = () => {
-    walletService.disconnectWallet();
-    setWalletAddress('');
-    setIsWalletConnected(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,257 +68,103 @@ export default function Register() {
       return;
     }
 
-    // Show wallet warning if not connected
-    if (!isWalletConnected) {
-      setShowWalletWarning(true);
-      return;
-    }
-
     try {
-      await register(formData.name, formData.email, formData.password, walletAddress);
+      await register(formData.name, formData.email, formData.password, isWalletConnected ? walletAddress : undefined);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Registration failed. Please try again.');
     }
   };
 
-  const handleSkipWallet = () => {
-    setShowWalletWarning(false);
-    // Continue with registration without wallet
-    register(formData.name, formData.email, formData.password);
-  };
-
-  const handleConnectWalletFromWarning = () => {
-    setShowWalletWarning(false);
-    connectWallet();
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="max-w-md w-full space-y-8"
-      >
-        <div>
-          <div className="flex justify-center">
-            <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center">
-              <Leaf className="w-10 h-10 text-white" />
-            </div>
-          </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Join the Zeituna Community
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Already have an account?{' '}
-            <Link to="/login" className="font-medium text-green-600 hover:text-green-500">
-              Sign in here
-            </Link>
-          </p>
-        </div>
+    <div className="relative min-h-screen bg-black overflow-hidden">
+      {/* Video Background */}
+      <video
+        className="absolute inset-0 w-full h-full object-cover z-0"
+        src="/assets_task_01k0mvvh89efqadt8dwf17x9kc_task_01k0mvvh89efqadt8dwf17x9kc_genid_b3f2495d-219b-49ef-b888-fdb551baf921_25_07_20_21_31_275149_videos_00000_61819355_source.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/80 z-10" />
 
-        <motion.form
+      {/* Registration Form */}
+      <div className="relative min-h-screen flex items-center justify-center z-20 py-12">
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="mt-8 space-y-6"
-          onSubmit={handleSubmit}
+          transition={{ duration: 0.8 }}
+          className="w-full max-w-md p-8 backdrop-blur-lg bg-white/10 border border-white/20 rounded-2xl shadow-xl"
         >
-          <div className="bg-white rounded-xl shadow-lg p-8 space-y-6">
+          <div className="text-center mb-8">
+            <Link to="/">
+              <img src="/treewihte1.png" alt="Zeituna Logo" className="w-20 h-20 mx-auto mb-4 object-contain" />
+            </Link>
+            <h2 className="text-3xl font-extrabold text-white">Join Zeituna</h2>
+            <p className="text-green-100 font-medium">Create an account to start your sustainable journey.</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
+              <div className="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg text-center">
                 {error}
               </div>
             )}
 
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name
-              </label>
-              <div className="relative">
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  autoComplete="name"
-                  required
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="appearance-none relative block w-full px-3 py-3 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                  placeholder="Enter your full name"
-                />
-                <User className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-              </div>
+            {/* Full Name, Email, Password Inputs */}
+            <div className="relative">
+              <input id="name" name="name" type="text" required value={formData.name} onChange={handleChange} className="w-full px-4 py-3 pl-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Full Name" />
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            </div>
+            <div className="relative">
+              <input id="email" name="email" type="email" required value={formData.email} onChange={handleChange} className="w-full px-4 py-3 pl-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Email Address" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            </div>
+            <div className="relative">
+              <input id="password" name="password" type={showPassword ? 'text' : 'password'} required value={formData.password} onChange={handleChange} className="w-full px-4 py-3 pl-12 pr-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Password" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 hover:text-white">{showPassword ? <EyeOff /> : <Eye />}</button>
+            </div>
+            <div className="relative">
+              <input id="confirmPassword" name="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} required value={formData.confirmPassword} onChange={handleChange} className="w-full px-4 py-3 pl-12 pr-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Confirm Password" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 hover:text-white">{showConfirmPassword ? <EyeOff /> : <Eye />}</button>
             </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="appearance-none relative block w-full px-3 py-3 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                  placeholder="Enter your email"
-                />
-                <Mail className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="appearance-none relative block w-full px-3 py-3 pl-10 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                  placeholder="Create a password"
-                />
-                <Lock className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3.5 h-5 w-5 text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? <EyeOff /> : <Eye />}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  required
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className="appearance-none relative block w-full px-3 py-3 pl-10 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                  placeholder="Confirm your password"
-                />
-                <Lock className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-3.5 h-5 w-5 text-gray-400 hover:text-gray-600"
-                >
-                  {showConfirmPassword ? <EyeOff /> : <Eye />}
-                </button>
-              </div>
-            </div>
-
-            {/* Wallet Connection Section */}
-            <div className="border-t pt-6">
-              <div className="flex items-center justify-between mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  MetaMask Wallet
-                </label>
-                {isWalletConnected && (
-                  <div className="flex items-center space-x-1 text-green-600">
-                    <CheckCircle className="w-4 h-4" />
-                    <span className="text-xs font-medium">Connected</span>
-                  </div>
-                )}
-              </div>
-
-              {!isWalletConnected ? (
-                <button
-                  type="button"
-                  onClick={connectWallet}
-                  disabled={isConnectingWallet}
-                  className="w-full flex items-center justify-center space-x-2 bg-orange-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <Wallet className="w-5 h-5" />
-                  <span>{isConnectingWallet ? 'Connecting...' : 'Connect MetaMask Wallet'}</span>
-                </button>
-              ) : (
-                <div className="space-y-3">
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                    <p className="text-green-800 text-sm font-medium">Wallet Connected</p>
-                    <p className="text-green-700 text-xs mt-1 break-all">
-                      {walletAddress}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={disconnectWallet}
-                    className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-                  >
-                    Disconnect Wallet
-                  </button>
-                </div>
-              )}
-
-              <p className="text-xs text-gray-500 mt-2">
-                Connecting your wallet enables TUT token rewards and NFT ownership
-              </p>
-            </div>
-
-            <div className="flex items-start">
-              <input
-                id="terms"
-                name="terms"
-                type="checkbox"
-                checked={agreedToTerms}
-                onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded mt-1"
-              />
-              <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
-                I agree to the{' '}
-                <Link to="/terms" className="text-green-600 hover:text-green-500">
-                  Terms of Service
-                </Link>{' '}
-                and{' '}
-                <Link to="/privacy" className="text-green-600 hover:text-green-500">
-                  Privacy Policy
-                </Link>
-              </label>
-            </div>
-
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-              >
-                {isLoading ? 'Creating account...' : 'Create account'}
+            {/* Wallet Connection */}
+            {!isWalletConnected ? (
+              <button type="button" onClick={connectWallet} disabled={isConnectingWallet} className="w-full flex items-center justify-center space-x-2 bg-white/10 border border-white/20 text-white py-3 px-4 rounded-lg font-medium hover:bg-white/20 disabled:opacity-50">
+                <Wallet className="w-5 h-5 text-green-400" />
+                <span>{isConnectingWallet ? 'Connecting...' : 'Connect Wallet (Optional)'}</span>
               </button>
+            ) : (
+              <div className="bg-green-500/20 border border-green-500 text-green-300 px-4 py-3 rounded-lg text-center">
+                Wallet Connected: {walletAddress.substring(0, 6)}...{walletAddress.substring(walletAddress.length - 4)}
+              </div>
+            )}
+
+            {/* Terms and Conditions */}
+            <div className="flex items-center">
+              <input id="terms" name="terms" type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} className="h-4 w-4 text-green-600 bg-white/20 border-white/30 rounded focus:ring-green-500" />
+              <label htmlFor="terms" className="ml-2 text-gray-300 text-sm">I agree to the <Link to="/terms" className="text-green-400 hover:text-green-300">Terms</Link> and <Link to="/privacy" className="text-green-400 hover:text-green-300">Privacy Policy</Link></label>
             </div>
 
-            <div className="text-center">
-              <p className="text-xs text-gray-500">
-                By creating an account, you join our mission to create a more sustainable future through conscious shopping and environmental stewardship.
-              </p>
-            </div>
-          </div>
-        </motion.form>
-      </motion.div>
+            {/* Submit Button */}
+            <button type="submit" disabled={isLoading || !agreedToTerms} className="w-full py-3 px-4 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-bold text-lg shadow-lg transition-all duration-200 hover:from-green-700 hover:to-blue-700 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+              {isLoading ? 'Creating Account...' : 'Create Account'}
+            </button>
+          </form>
 
-      <WalletWarningModal
-        isOpen={showWalletWarning}
-        onClose={() => setShowWalletWarning(false)}
-        onSkip={handleSkipWallet}
-        onConnect={handleConnectWalletFromWarning}
-      />
+          {/* Sign In Link */}
+          <p className="mt-8 text-center text-gray-300">
+            Already have an account?{' '}
+            <Link to="/login" className="font-medium text-green-400 hover:text-green-300">
+              Sign in here
+            </Link>
+          </p>
+        </motion.div>
+      </div>
     </div>
   );
 }
