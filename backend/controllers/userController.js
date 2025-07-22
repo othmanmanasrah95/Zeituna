@@ -1,7 +1,6 @@
 // controllers/userController.js
-
-// controllers/userController.js
-const User = require('../models/User');
+const User = require('../models/user');
+const TokenBalance = require('../models/tokenBalance');
 
 exports.getUserProfile = async (req, res, next) => {
   try {
@@ -77,13 +76,38 @@ exports.getUserTransactions = (req, res) => {
   });
 };
 
-// Dummy: Get user's token balance
-exports.getUserTokenBalance = (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Token balance fetched',
-    balance: 150
-  });
+// Get user's token balance
+exports.getUserTokenBalance = async (req, res) => {
+  try {
+    const tokenBalance = await TokenBalance.findOne({ user: req.user._id });
+    
+    if (!tokenBalance) {
+      // Create token balance if it doesn't exist
+      const newTokenBalance = new TokenBalance({
+        user: req.user._id,
+        balance: 0
+      });
+      await newTokenBalance.save();
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Token balance created',
+        balance: 0
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Token balance fetched',
+      balance: tokenBalance.balance,
+      transactions: tokenBalance.transactions
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 };
 
 // Dummy: Get trees the user adopted/planted
