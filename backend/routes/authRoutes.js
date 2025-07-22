@@ -1,20 +1,21 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, getProfile, updateProfile, connectWallet } = require('../controllers/authController');
+const { register, login, getProfile, updateProfile, connectWallet, logout } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
+const { validateRegistration, validateLogin } = require('../middleware/validation');
+const { authLimiter } = require('../middleware/security');
 
-// Import controller functions
-const { register, login, logout } = require('../controllers/authController');
 
 // Register
-router.post('/register', register);
-router.post('/login', login);
+router.post('/register', authLimiter, validateRegistration, register);
+
+// Login
+router.post('/login', authLimiter, validateLogin, login);
+
+// Profile routes
 router.get('/profile', protect, getProfile);
 router.put('/profile', protect, updateProfile);
 router.post('/connect-wallet', protect, connectWallet);
-
-// Login
-router.post('/login', login);
 
 // Logout (Optional)
 router.get('/logout', logout);

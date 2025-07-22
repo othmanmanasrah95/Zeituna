@@ -1,6 +1,8 @@
-const User = require('../models/User');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const User = require('../models/user');
+const TokenBalance = require('../models/tokenBalance');
+const Tree = require('../models/tree');
+const Transaction = require('../models/transaction');
+const { generateToken } = require('../utils/tokenUtils');
 
 // REGISTER CONTROLLER
 exports.register = async (req, res) => {
@@ -34,20 +36,19 @@ exports.register = async (req, res) => {
     await newUser.save();
 
     // Generate token
-    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
-      expiresIn: '1d',
-    });
+    const token = generateToken(newUser._id);
 
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
-      token,
-      user: {
-        id: newUser._id,
+      data: {
+        _id: newUser._id,
         name: newUser.name,
-        walletAddress: user.walletAddress,
-        walletConnected: user.walletConnected,
         email: newUser.email,
+        role: newUser.role,
+        walletAddress: newUser.walletAddress,
+        walletConnected: newUser.walletConnected,
+        token
       }
     });
   } catch (err) {
@@ -81,14 +82,19 @@ exports.login = async (req, res) => {
       });
     }
 
+    // Generate token
+    const token = generateToken(user._id);
+
     res.status(200).json({
-      token,
-      user: {
-        id: user._id,
+      success: true,
+      data: {
+        _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        token: generateToken(user._id)
+        walletAddress: user.walletAddress,
+        walletConnected: user.walletConnected,
+        token
       }
     });
   } catch (error) {
@@ -104,10 +110,25 @@ exports.login = async (req, res) => {
 // @access  Private
 exports.getProfile = async (req, res) => {
   try {
+    res.set('Cache-Control', 'no-store');
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not authenticated'
+      });
+    }
+
     const user = await User.findById(req.user._id)
       .select('-password')
       .populate('adoptedTrees')
       .populate('orders');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
 
     const tokenBalance = await TokenBalance.findOne({ user: user._id });
 
@@ -119,6 +140,7 @@ exports.getProfile = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('getProfile error:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -165,4 +187,39 @@ exports.updateProfile = async (req, res) => {
       error: error.message
     });
   }
+};
+
+// @desc    Connect wallet to user profile
+// @route   POST /api/auth/connect-wallet
+// @access  Private
+exports.connectWallet = async (req, res) => {
+  try {
+    const { walletAddress } = req.body;
+    if (!walletAddress) {
+      return res.status(400).json({ success: false, error: 'Wallet address is required' });
+    }
+    // Check if wallet address is already in use
+    const walletExists = await User.findOne({ walletAddress });
+    if (walletExists && walletExists._id.toString() !== req.user._id.toString()) {
+      return res.status(400).json({ success: false, error: 'Wallet address is already connected to another account' });
+    }
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+    user.walletAddress = walletAddress;
+    user.walletConnected = true;
+    await user.save();
+    res.json({ success: true, message: 'Wallet connected successfully', walletAddress });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// @desc    Logout user (JWT-based, stateless)
+// @route   GET /api/auth/logout
+// @access  Public
+exports.logout = async (req, res) => {
+  // For JWT, logout is handled on the client by deleting the token
+  res.json({ success: true, message: 'Logged out successfully' });
 }; 
