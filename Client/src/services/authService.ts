@@ -15,6 +15,7 @@ export interface User {
   name: string;
   email: string;
   role: string;
+  profilePicture?: string;
   walletAddress?: string;
   walletConnected?: boolean;
   tokenBalance?: number;
@@ -66,7 +67,7 @@ const authService = {
   },
 
   // Update user profile
-  updateProfile: async (data: Partial<User>): Promise<AuthResponse> => {
+  updateProfile: async (data: Partial<User> & { password?: string; currentPassword?: string }): Promise<AuthResponse> => {
     const response = await api.put('/auth/profile', data);
     return response.data;
   },

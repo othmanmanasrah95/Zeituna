@@ -12,6 +12,7 @@ import PlantTree from './pages/PlantTree';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Profile from './pages/Profile';
+import WalletConnect from './pages/WalletConnect';
 import Cart from './pages/Cart';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ProductDetail from './pages/ProductDetail';
@@ -36,6 +37,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/wallet/connect" element={<WalletConnect />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/admin/*" element={<AdminDashboard />} />
               </Routes>
