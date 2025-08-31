@@ -1,21 +1,40 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Edit, Save, X, Wallet } from 'lucide-react';
+import { Edit, Save, X, Wallet, ImagePlus, Mail, Lock, LogOut, User as UserIcon, ExternalLink, MapPin, CalendarDays, Trees, ArrowRight } from 'lucide-react';
+import authService from '../services/authService';
+import walletService from '../services/walletService';
+import { useNavigate } from 'react-router-dom';
 
 export default function Profile() {
-  const { user, loading, error, logout } = useAuth();
+  const { user, loading, logout, refreshProfile } = useAuth() as any;
+  const navigate = useNavigate();
   const [editMode, setEditMode] = useState(false);
-  const [form, setForm] = useState({ name: user?.name || '', password: '' });
+  const [form, setForm] = useState({ name: user?.name || '', email: user?.email || '', password: '', currentPassword: '', profilePicture: user?.profilePicture || '' });
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
+  const [, setIsWalletConnected] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!loading) {
+      walletService.isMetaMaskConnected().then(setIsWalletConnected).catch(() => setIsWalletConnected(false));
+    }
+  }, [loading]);
+
+  useEffect(() => {
+    // Ensure user info is fresh (e.g., after wallet linking)
+    if (!loading) {
+      refreshProfile?.();
+    }
+  }, [loading]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-xl">Loading...</div>;
   if (!user) return <div className="min-h-screen flex items-center justify-center text-xl text-red-600">Not logged in.</div>;
 
   const handleEdit = () => {
     setEditMode(true);
-    setForm({ name: user.name, password: '' });
+    setForm({ name: user.name, email: user.email, password: '', currentPassword: '', profilePicture: user.profilePicture || '' });
     setFormError('');
     setSuccess('');
   };
@@ -30,6 +49,20 @@ export default function Profile() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const handlePickImage = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setForm(prev => ({ ...prev, profilePicture: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
@@ -38,12 +71,24 @@ export default function Profile() {
       setFormError('Name cannot be empty');
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      setFormError('Please provide a valid email');
+      return;
+    }
     setSaving(true);
     try {
-      // Only send password if changed
-      const update: any = { name: form.name };
-      if (form.password) update.password = form.password;
-      const res = await import('../services/authService').then(m => m.default.updateProfile(update));
+      const update: any = { name: form.name, email: form.email, profilePicture: form.profilePicture };
+      if (form.password) {
+        if (!form.currentPassword) {
+          setFormError('Please enter your current password to set a new one');
+          setSaving(false);
+          return;
+        }
+        update.password = form.password;
+        update.currentPassword = form.currentPassword;
+      }
+      await authService.updateProfile(update);
+      await (refreshProfile?.() || Promise.resolve());
       setSuccess('Profile updated!');
       setEditMode(false);
     } catch (err: any) {
@@ -54,98 +99,250 @@ export default function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 via-blue-50 to-white flex items-center justify-center py-12 px-4">
-      <div className="w-full max-w-lg bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-8 border border-green-100">
-        <div className="flex items-center mb-8">
-          <img src="/treewhite.svg" alt="Profile" className="w-16 h-16 rounded-full bg-green-100 object-contain mr-4" />
-          <div>
-            <h2 className="text-3xl font-bold text-green-900 mb-1">Profile</h2>
-            <p className="text-gray-500">Welcome, {user.name}</p>
-          </div>
-        </div>
-        <form onSubmit={handleSave} className="space-y-6">
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">Name</label>
-            {editMode ? (
-              <input
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
-                disabled={saving}
-              />
-            ) : (
-              <div className="text-lg text-gray-900">{user.name}</div>
-            )}
-          </div>
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">Email</label>
-            <div className="text-lg text-gray-900">{user.email}</div>
-          </div>
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">Wallet Address</label>
-            <div className="flex items-center text-gray-900">
-              <Wallet className="w-5 h-5 mr-2 text-green-600" />
-              {user.walletAddress ? (
-                <span className="font-mono">{user.walletAddress}</span>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 py-10 px-4">
+      <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <img
+                  src={form.profilePicture || user.profilePicture || '/treewihte1.png'}
+                  alt="Avatar"
+                  className="w-20 h-20 rounded-full object-cover ring-2 ring-green-200"
+                />
+                {editMode && (
+                  <button
+                    type="button"
+                    onClick={handlePickImage}
+                    className="absolute -bottom-1 -right-1 bg-green-600 text-white p-1.5 rounded-full shadow hover:bg-green-700"
+                  >
+                    <ImagePlus className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <div>
+                <h2 className="text-2xl font-semibold text-gray-900">{user.name}</h2>
+                <p className="text-gray-500 flex items-center gap-2"><Mail className="w-4 h-4" /> {user.email}</p>
+              </div>
+            </div>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+            <div className="flex items-center gap-3 mt-6 w-full">
+              {editMode ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-60"
+                  >
+                    <Save className="w-4 h-4 mr-2" /> Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200"
+                  >
+                    <X className="w-4 h-4 mr-2" /> Cancel
+                  </button>
+                </>
               ) : (
-                <span className="italic text-gray-400">Not connected</span>
-              )}
-            </div>
-          </div>
-          {editMode && (
-            <div>
-              <label className="block text-gray-700 font-medium mb-1">New Password</label>
-              <input
-                name="password"
-                type="password"
-                value={form.password}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
-                disabled={saving}
-                placeholder="Leave blank to keep current password"
-              />
-            </div>
-          )}
-          {formError && <div className="text-red-600 text-sm">{formError}</div>}
-          {success && <div className="text-green-600 text-sm">{success}</div>}
-          <div className="flex gap-4 mt-4">
-            {editMode ? (
-              <>
-                <button
-                  type="submit"
-                  className="inline-flex items-center px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50"
-                  disabled={saving}
-                >
-                  <Save className="w-5 h-5 mr-2" /> Save
-                </button>
                 <button
                   type="button"
-                  className="inline-flex items-center px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
-                  onClick={handleCancel}
-                  disabled={saving}
+                  onClick={handleEdit}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
                 >
-                  <X className="w-5 h-5 mr-2" /> Cancel
+                  <Edit className="w-4 h-4 mr-2" /> Edit
                 </button>
-              </>
-            ) : (
+              )}
               <button
                 type="button"
-                className="inline-flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
-                onClick={handleEdit}
+                onClick={logout}
+                className="ml-auto inline-flex items-center px-4 py-2 bg-red-50 text-red-700 rounded-lg font-medium hover:bg-red-100"
               >
-                <Edit className="w-5 h-5 mr-2" /> Edit Profile
+                <LogOut className="w-4 h-4 mr-2" /> Logout
               </button>
-            )}
-            <button
-              type="button"
-              className="ml-auto px-6 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 transition"
-              onClick={logout}
-            >
-              Log Out
-            </button>
+            </div>
+            {formError && <div className="text-red-600 text-sm mt-4">{formError}</div>}
+            {success && <div className="text-green-600 text-sm mt-4">{success}</div>}
           </div>
-        </form>
+        </div>
+
+        <div className="lg:col-span-3">
+          <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
+            <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="col-span-1">
+                <label className="block text-sm text-gray-600 mb-1">Name</label>
+                {editMode ? (
+                  <div className="relative">
+                    <UserIcon className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      name="name"
+                      value={form.name}
+                      onChange={handleChange}
+                      className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
+                      disabled={saving}
+                    />
+                  </div>
+                ) : (
+                  <div className="text-gray-900">{user.name}</div>
+                )}
+              </div>
+
+              <div className="col-span-1">
+                <label className="block text-sm text-gray-600 mb-1">Email</label>
+                {editMode ? (
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      name="email"
+                      type="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
+                      disabled={saving}
+                    />
+                  </div>
+                ) : (
+                  <div className="text-gray-900">{user.email}</div>
+                )}
+              </div>
+
+              {editMode && (
+                <>
+                  <div className="md:col-span-1">
+                    <label className="block text-sm text-gray-600 mb-1">Current Password</label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        name="currentPassword"
+                        type="password"
+                        value={form.currentPassword}
+                        onChange={handleChange}
+                        className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
+                        disabled={saving}
+                        placeholder="Enter current password"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-1">
+                    <label className="block text-sm text-gray-600 mb-1">New Password</label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        name="password"
+                        type="password"
+                        value={form.password}
+                        onChange={handleChange}
+                        className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
+                        disabled={saving}
+                        placeholder="Leave blank to keep current password"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className="md:col-span-2">
+                <label className="block text-sm text-gray-600 mb-1">Wallet</label>
+                <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+                  <Wallet className="w-5 h-5 text-green-600" />
+                  {user.walletAddress ? (
+                    <div className="flex-1">
+                      <div className="font-mono text-sm text-gray-900">{user.walletAddress}</div>
+                      <div className="text-xs text-gray-500">{user.walletConnected ? 'Connected' : 'Not connected'}</div>
+                    </div>
+                  ) : (
+                    <div className="flex-1 text-gray-500">No wallet linked</div>
+                  )}
+                  {!user.walletAddress ? (
+                    <button
+                      type="button"
+                      onClick={() => navigate('/wallet/connect')}
+                      className="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700"
+                    >
+                      Add Wallet <ExternalLink className="w-4 h-4 ml-1" />
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="md:col-span-2 flex justify-end gap-3 mt-2">
+                {editMode && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleCancel}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-60"
+                    >
+                      Save Changes
+                    </button>
+                  </>
+                )}
+              </div>
+            </form>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 mt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Trees className="w-5 h-5 text-green-700" /> Adopted Trees
+              </h3>
+              <button
+                type="button"
+                onClick={() => navigate('/roots/adopt')}
+                className="inline-flex items-center gap-1 text-sm text-green-700 hover:text-green-800"
+              >
+                Adopt a Tree <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {Array.isArray(user.adoptedTrees) && user.adoptedTrees.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {user.adoptedTrees.map((tree: any) => (
+                  <div key={tree._id} className="border border-gray-100 rounded-xl overflow-hidden shadow-sm">
+                    <div className="h-32 bg-gray-50">
+                      <img
+                        src={(tree.images && tree.images[0]) || '/tree1.png'}
+                        alt={tree.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <div className="font-semibold text-gray-900">{tree.name}</div>
+                      <div className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                        <MapPin className="w-4 h-4 text-green-600" /> {tree.location || 'Unknown location'}
+                      </div>
+                      <div className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                        <CalendarDays className="w-4 h-4 text-green-600" />
+                        {tree.plantedDate ? new Date(tree.plantedDate).toLocaleDateString() : 'Date not available'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-600 mb-4">You haven’t adopted any trees yet.</p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/roots/adopt')}
+                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
+                >
+                  Adopt a Tree <ArrowRight className="w-4 h-4 ml-2" />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

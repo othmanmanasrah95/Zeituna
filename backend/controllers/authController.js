@@ -153,7 +153,7 @@ exports.getProfile = async (req, res) => {
 // @access  Private
 exports.updateProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id).select('+password');
 
     if (!user) {
       return res.status(404).json({
@@ -164,8 +164,18 @@ exports.updateProfile = async (req, res) => {
 
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
+    if (typeof req.body.profilePicture !== 'undefined') {
+      user.profilePicture = req.body.profilePicture;
+    }
 
     if (req.body.password) {
+      if (!req.body.currentPassword) {
+        return res.status(400).json({ success: false, error: 'Current password is required' });
+      }
+      const isMatch = await user.matchPassword(req.body.currentPassword);
+      if (!isMatch) {
+        return res.status(400).json({ success: false, error: 'Current password is incorrect' });
+      }
       user.password = req.body.password;
     }
 
@@ -178,6 +188,9 @@ exports.updateProfile = async (req, res) => {
         name: updatedUser.name,
         email: updatedUser.email,
         role: updatedUser.role,
+        walletAddress: updatedUser.walletAddress,
+        walletConnected: updatedUser.walletConnected,
+        profilePicture: updatedUser.profilePicture,
         token: generateToken(updatedUser._id)
       }
     });
