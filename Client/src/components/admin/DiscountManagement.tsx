@@ -38,7 +38,7 @@ export default function DiscountManagement({ className = '' }: DiscountManagemen
   const [createForm, setCreateForm] = useState({
     code: '',
     percentage: 10,
-    userId: '',
+    userEmail: '',
     maxUsage: 1,
     expiresAt: '',
     minOrderAmount: 0,
@@ -95,7 +95,7 @@ export default function DiscountManagement({ className = '' }: DiscountManagemen
       setCreateForm({
         code: '',
         percentage: 10,
-        userId: '',
+        userEmail: '',
         maxUsage: 1,
         expiresAt: '',
         minOrderAmount: 0,
@@ -418,13 +418,13 @@ export default function DiscountManagement({ className = '' }: DiscountManagemen
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  User ID
+                  User Email
                 </label>
                 <input
-                  type="text"
-                  value={createForm.userId}
-                  onChange={(e) => setCreateForm({ ...createForm, userId: e.target.value })}
-                  placeholder="User ID"
+                  type="email"
+                  value={createForm.userEmail}
+                  onChange={(e) => setCreateForm({ ...createForm, userEmail: e.target.value })}
+                  placeholder="user@example.com"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />

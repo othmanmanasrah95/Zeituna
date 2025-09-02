@@ -21,8 +21,9 @@ const discountSchema = new mongoose.Schema({
   },
   tutAmount: {
     type: Number,
-    required: true,
-    min: 0
+    required: false,
+    min: 0,
+    default: 0
   },
   status: {
     type: String,
@@ -44,7 +45,7 @@ const discountSchema = new mongoose.Schema({
   },
   order: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Order',
+    ref: 'Transaction',
     default: null
   },
   maxUsage: {

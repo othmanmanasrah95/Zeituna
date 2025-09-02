@@ -23,9 +23,9 @@ const validateDiscountCreation = [
   body('percentage')
     .isFloat({ min: 1, max: 100 })
     .withMessage('Percentage must be between 1 and 100'),
-  body('userId')
-    .isMongoId()
-    .withMessage('Valid user ID is required'),
+  body('userEmail')
+    .isEmail()
+    .withMessage('Valid user email is required'),
   body('expiresAt')
     .optional()
     .isISO8601()
