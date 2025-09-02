@@ -4,13 +4,26 @@ export interface DiscountCode {
   _id: string;
   code: string;
   percentage: number;
-  user: string;
+  user: {
+    _id: string;
+    name: string;
+    email: string;
+  };
   tutAmount?: number;
   status: 'active' | 'used' | 'expired' | 'cancelled';
   usedAt?: string;
   expiresAt: string;
-  usedBy?: string;
-  order?: string;
+  usedBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  order?: {
+    _id: string;
+    totalAmount: number;
+    status: string;
+    paymentStatus: string;
+  };
   maxUsage: number;
   currentUsage: number;
   minOrderAmount: number;
@@ -126,7 +139,7 @@ class DiscountService {
   async createDiscountCode(discountData: {
     code: string;
     percentage: number;
-    userId: string;
+    userEmail: string;
     maxUsage?: number;
     expiresAt?: string;
     minOrderAmount?: number;

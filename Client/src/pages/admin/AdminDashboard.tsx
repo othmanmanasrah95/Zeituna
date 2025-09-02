@@ -2586,8 +2586,8 @@ export default function AdminDashboard() {
       try {
         const response = await api.get('/auth/profile');
         console.log('User profile:', response.data);
-        if (response.data.user.role !== 'admin') {
-          console.error('User is not admin:', response.data.user.role);
+        if (response.data?.data?.user?.role !== 'admin') {
+          console.error('User is not admin:', response.data?.data?.user?.role);
         }
       } catch (error) {
         console.error('Failed to get user profile:', error);

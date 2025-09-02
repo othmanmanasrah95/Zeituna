@@ -283,7 +283,7 @@ const getAllDiscounts = async (req, res) => {
       .populate('user', 'name email')
       .populate('createdBy', 'name email')
       .populate('usedBy', 'name email')
-      .populate('order', 'orderNumber totalAmount');
+      .populate('order', 'totalAmount status paymentStatus');
     
     const total = await Discount.countDocuments(query);
     
@@ -336,7 +336,7 @@ const createDiscountCode = async (req, res) => {
     const {
       code,
       percentage,
-      userId,
+      userEmail,
       maxUsage = 1,
       expiresAt,
       minOrderAmount = 0,
@@ -344,6 +344,15 @@ const createDiscountCode = async (req, res) => {
       description
     } = req.body;
     
+    // Find user by email
+    const user = await User.findOne({ email: userEmail.toLowerCase() });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'User not found with the provided email'
+      });
+    }
+
     // Check if code already exists
     const existingDiscount = await Discount.findOne({ code: code.toUpperCase() });
     if (existingDiscount) {
@@ -356,13 +365,14 @@ const createDiscountCode = async (req, res) => {
     const discount = new Discount({
       code: code.toUpperCase(),
       percentage,
-      user: userId,
+      user: user._id,
       createdBy: req.user._id,
       maxUsage,
       expiresAt: expiresAt ? new Date(expiresAt) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       minOrderAmount,
       maxDiscountAmount,
-      description: description || 'Manual Discount Code'
+      description: description || 'Manual Discount Code',
+      tutAmount: 0 // Default value for manual discount codes
     });
     
     await discount.save();
