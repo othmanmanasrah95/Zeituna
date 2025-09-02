@@ -33,11 +33,15 @@ const productSchema = new mongoose.Schema({
     type: Number,
     required: [true, 'Please add a price in ILS']
   },
+  originalPrice: {
+    type: Number,
+    default: null
+  },
   unit: {
     type: String,
     default: ''
   },
-  availableQty: {
+  stockQuantity: {
     type: Number,
     default: 1
   },
@@ -48,7 +52,12 @@ const productSchema = new mongoose.Schema({
   category: {
     type: String,
     required: [true, 'Please add a category'],
-    enum: ['olive_oil', 'handicraft']
+    enum: ['organic', 'handmade', 'eco-friendly', 'local', 'olive_oil', 'handicraft']
+  },
+  seller: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
   rewardTUTPercent: {
     type: Number,
@@ -72,6 +81,36 @@ const productSchema = new mongoose.Schema({
   rating: {
     type: Number,
     default: 0
+  },
+  // Additional fields for detailed view
+  features: [String],
+  specifications: {
+    type: Map,
+    of: String
+  },
+  shipping: {
+    free: {
+      type: Boolean,
+      default: false
+    },
+    estimatedDays: {
+      type: String,
+      default: '3-5 business days'
+    }
+  },
+  sustainability: {
+    carbonNeutral: {
+      type: Boolean,
+      default: false
+    },
+    locallySourced: {
+      type: Boolean,
+      default: false
+    },
+    plasticFree: {
+      type: Boolean,
+      default: false
+    }
   },
   createdAt: {
     type: Date,

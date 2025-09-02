@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { 
   BarChart3, 
@@ -10,9 +10,12 @@ import {
   TrendingUp,
   DollarSign,
   Package,
-  Leaf
+  Leaf,
+  X
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import api from '../../config/api';
+import landPlotService, { LandPlot } from '../../services/landPlotService';
 
 // Admin Components
 function AdminOverview() {
@@ -171,11 +174,65 @@ function AdminUsers() {
 }
 
 function AdminProducts() {
-  const products = [
-    { id: 1, name: 'Organic Olive Oil', category: 'Organic', price: 24.99, stock: 45, status: 'Active' },
-    { id: 2, name: 'Handwoven Basket', category: 'Handmade', price: 45.00, stock: 12, status: 'Active' },
-    { id: 3, name: 'Eco Soap Set', category: 'Eco-Friendly', price: 18.50, stock: 0, status: 'Out of Stock' }
-  ];
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
+  
+  // Debug: Log component state
+  useEffect(() => {
+    console.log('AdminProducts - Component mounted');
+    console.log('AdminProducts - Products state:', products);
+    console.log('AdminProducts - Loading state:', loading);
+  }, [products, loading]);
+
+  useEffect(() => {
+    console.log('AdminProducts useEffect - calling fetchProducts');
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching products from admin API...');
+      const response = await api.get('/admin/products');
+      console.log('Products response:', response.data);
+      if (response.data.success) {
+        setProducts(response.data.data);
+        console.log('Products updated:', response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (productId: string) => {
+    if (window.confirm('Are you sure you want to delete this product?')) {
+      try {
+        console.log('Deleting product:', productId);
+        const response = await api.delete(`/admin/products/${productId}`);
+        if (response.data.success) {
+          console.log('Product deleted successfully');
+          fetchProducts(); // Refresh the list
+        }
+      } catch (error) {
+        console.error('Error deleting product:', error);
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -184,11 +241,37 @@ function AdminProducts() {
           <h1 className="text-2xl font-bold text-gray-900">Product Management</h1>
           <p className="text-gray-600">Manage your marketplace products</p>
         </div>
-        <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center">
+        <button 
+          onClick={() => setShowAddForm(true)}
+          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Add Product
         </button>
       </div>
+
+      {showAddForm && (
+        <AddProductForm 
+          onClose={() => setShowAddForm(false)} 
+          onSuccess={() => {
+            console.log('AddProductForm onSuccess called');
+            setShowAddForm(false);
+            console.log('Refreshing products list...');
+            fetchProducts();
+          }}
+        />
+      )}
+
+      {editingProduct && (
+        <EditProductForm 
+          product={editingProduct}
+          onClose={() => setEditingProduct(null)} 
+          onSuccess={() => {
+            setEditingProduct(null);
+            fetchProducts();
+          }}
+        />
+      )}
 
       <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
         <div className="overflow-x-auto">
@@ -205,9 +288,27 @@ function AdminProducts() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {products.map((product) => (
-                <tr key={product.id} className="hover:bg-gray-50">
+                <tr key={product._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                    <div className="flex items-center">
+                      <div className="h-10 w-10 flex-shrink-0">
+                        {product.images && product.images[0] ? (
+                          <img 
+                            src={product.images[0]} 
+                            alt={product.name}
+                            className="h-10 w-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                            <span className="text-sm font-medium text-gray-500">P</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                        <div className="text-sm text-gray-500">{product.description?.substring(0, 50)}...</div>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
@@ -218,18 +319,28 @@ function AdminProducts() {
                     ${product.price}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {product.stock}
+                    {product.stockQuantity || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      product.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      product.inStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}>
-                      {product.status}
+                      {product.inStock ? 'In Stock' : 'Out of Stock'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button className="text-green-600 hover:text-green-900 mr-3">Edit</button>
-                    <button className="text-red-600 hover:text-red-900">Delete</button>
+                    <button 
+                      onClick={() => setEditingProduct(product)}
+                      className="text-green-600 hover:text-green-900 mr-3"
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(product._id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -242,11 +353,61 @@ function AdminProducts() {
 }
 
 function AdminTrees() {
-  const trees = [
-    { id: 1, name: 'Mediterranean Oak "Sophia"', location: 'Sierra Nevada, Spain', adopters: 8, maxAdopters: 10, status: 'Available' },
-    { id: 2, name: 'Pine Forest Guardian "Atlas"', location: 'Tuscany, Italy', adopters: 12, maxAdopters: 15, status: 'Available' },
-    { id: 3, name: 'Olive Heritage "Luna"', location: 'Andalusia, Spain', adopters: 8, maxAdopters: 8, status: 'Fully Adopted' }
-  ];
+  const [trees, setTrees] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingTree, setEditingTree] = useState<any>(null);
+
+  useEffect(() => {
+    fetchTrees();
+  }, []);
+
+  const fetchTrees = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/admin/trees');
+      if (response.data.success) {
+        setTrees(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching trees:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (treeId: string) => {
+    if (window.confirm('Are you sure you want to delete this tree?')) {
+      try {
+        const response = await api.delete(`/admin/trees/${treeId}`);
+        if (response.data.success) {
+          fetchTrees(); // Refresh the list
+        }
+      } catch (error) {
+        console.error('Error deleting tree:', error);
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Tree Management</h1>
+          <p className="text-gray-600">Loading trees...</p>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm border p-8">
+          <div className="animate-pulse">
+            <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -255,7 +416,10 @@ function AdminTrees() {
           <h1 className="text-2xl font-bold text-gray-900">Tree Management</h1>
           <p className="text-gray-600">Manage trees available for adoption</p>
         </div>
-        <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center">
+        <button 
+          onClick={() => setShowAddForm(true)}
+          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Add Tree
         </button>
@@ -267,7 +431,9 @@ function AdminTrees() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tree</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Species</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adoption Progress</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -275,19 +441,25 @@ function AdminTrees() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {trees.map((tree) => (
-                <tr key={tree.id} className="hover:bg-gray-50">
+                <tr key={tree._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{tree.name}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {tree.species}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {tree.location}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    ${tree.adoptionPrice}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{tree.adopters}/{tree.maxAdopters} adopters</div>
+                    <div className="text-sm text-gray-900">{tree.adopters?.length || 0}/{tree.maxAdopters} adopters</div>
                     <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
                       <div
                         className="bg-green-600 h-2 rounded-full"
-                        style={{ width: `${(tree.adopters / tree.maxAdopters) * 100}%` }}
+                        style={{ width: `${((tree.adopters?.length || 0) / tree.maxAdopters) * 100}%` }}
                       ></div>
                     </div>
                   </td>
@@ -299,14 +471,1796 @@ function AdminTrees() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button className="text-green-600 hover:text-green-900 mr-3">Edit</button>
-                    <button className="text-blue-600 hover:text-blue-900 mr-3">Update</button>
-                    <button className="text-red-600 hover:text-red-900">Delete</button>
+                    <button 
+                      onClick={() => setEditingTree(tree)}
+                      className="text-green-600 hover:text-green-900 mr-3"
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(tree._id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Add Tree Form Modal */}
+      {showAddForm && (
+        <AddTreeForm 
+          onClose={() => setShowAddForm(false)} 
+          onSuccess={() => {
+            setShowAddForm(false);
+            fetchTrees();
+          }} 
+        />
+      )}
+
+      {/* Edit Tree Form Modal */}
+      {editingTree && (
+        <EditTreeForm 
+          tree={editingTree}
+          onClose={() => setEditingTree(null)} 
+          onSuccess={() => {
+            setEditingTree(null);
+            fetchTrees();
+          }} 
+        />
+      )}
+    </div>
+  );
+}
+
+function AdminLandPlots() {
+  const [landPlots, setLandPlots] = useState<LandPlot[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingLandPlot, setEditingLandPlot] = useState<LandPlot | null>(null);
+
+  useEffect(() => {
+    fetchLandPlots();
+  }, []);
+
+  const fetchLandPlots = async () => {
+    try {
+      setLoading(true);
+      const response = await landPlotService.getLandPlots();
+      if (response.success) {
+        setLandPlots(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching land plots:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (landPlotId: string) => {
+    if (window.confirm('Are you sure you want to delete this land plot?')) {
+      try {
+        const response = await landPlotService.deleteLandPlot(landPlotId);
+        if (response.success) {
+          fetchLandPlots(); // Refresh the list
+        }
+      } catch (error) {
+        console.error('Error deleting land plot:', error);
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Land Plot Management</h1>
+          <p className="text-gray-600">Loading land plots...</p>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm border p-8">
+          <div className="animate-pulse">
+            <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Land Plot Management</h1>
+          <p className="text-gray-600">Manage land plots available for tree adoption</p>
+        </div>
+        <button 
+          onClick={() => setShowAddForm(true)}
+          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Land Plot
+        </button>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Land Plot</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trees</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adoption Progress</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {landPlots.map((landPlot) => (
+                <tr key={landPlot._id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{landPlot.name}</div>
+                    <div className="text-sm text-gray-500">{landPlot.plotSize}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {landPlot.location}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {landPlot.adoptedTrees}/{landPlot.totalTrees}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    ${landPlot.adoptionPrice}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{landPlot.adoptionProgress}% adopted</div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                      <div
+                        className="bg-green-600 h-2 rounded-full"
+                        style={{ width: `${landPlot.adoptionProgress}%` }}
+                      ></div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      landPlot.status === 'Available' ? 'bg-green-100 text-green-800' : 
+                      landPlot.status === 'Fully Adopted' ? 'bg-blue-100 text-blue-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {landPlot.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <Link
+                      to={`/land-plot/${landPlot._id}`}
+                      className="text-blue-600 hover:text-blue-900 mr-3"
+                    >
+                      View
+                    </Link>
+                    <button 
+                      onClick={() => setEditingLandPlot(landPlot)}
+                      className="text-green-600 hover:text-green-900 mr-3"
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(landPlot._id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Add Land Plot Form Modal */}
+      {showAddForm && (
+        <AddLandPlotForm 
+          onClose={() => setShowAddForm(false)} 
+          onSuccess={() => {
+            setShowAddForm(false);
+            fetchLandPlots();
+          }} 
+        />
+      )}
+
+      {/* Edit Land Plot Form Modal */}
+      {editingLandPlot && (
+        <EditLandPlotForm 
+          landPlot={editingLandPlot}
+          onClose={() => setEditingLandPlot(null)} 
+          onSuccess={() => {
+            setEditingLandPlot(null);
+            fetchLandPlots();
+          }} 
+        />
+      )}
+    </div>
+  );
+}
+
+// Add Product Form Component
+function AddProductForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    price: '',
+    category: 'organic',
+    images: [''],
+    inStock: true,
+    featured: false,
+    stockQuantity: ''
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.name.trim() || !formData.description.trim() || !formData.price || !formData.images[0]?.trim()) {
+      alert('Please fill in all required fields: Name, Description, Price, and at least one image URL');
+      return;
+    }
+
+    setLoading(true);
+
+    const token = localStorage.getItem('token');
+    console.log('Token:', token ? 'Present' : 'Missing');
+    console.log('Form data:', formData);
+
+    try {
+      const requestBody = {
+        ...formData,
+        price: parseFloat(formData.price),
+        stockQuantity: formData.stockQuantity ? parseInt(formData.stockQuantity) : undefined,
+        images: formData.images.filter(img => img.trim())
+      };
+      
+      console.log('Request body:', requestBody);
+      console.log('Making request using API service');
+
+      const response = await api.post('/admin/products', requestBody);
+
+      console.log('Success response:', response.data);
+      onSuccess();
+    } catch (error: any) {
+      console.error('Error creating product:', error);
+      const errorMessage = error.response?.data?.error || error.message || 'Unknown error occurred';
+      alert(`Error creating product: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addImageField = () => {
+    setFormData(prev => ({ ...prev, images: [...prev.images, ''] }));
+  };
+
+  const removeImageField = (index: number) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      images: prev.images.filter((_, i) => i !== index) 
+    }));
+  };
+
+  const updateImage = (index: number, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.map((img, i) => i === index ? value : img)
+    }));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Add New Product</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Product Name</label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="organic">Organic</option>
+                <option value="handmade">Handmade</option>
+                <option value="eco-friendly">Eco-Friendly</option>
+                <option value="local">Local</option>
+                <option value="olive_oil">Olive Oil</option>
+                <option value="handicraft">Handicraft</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Price ($)</label>
+              <input
+                type="number"
+                step="0.01"
+                required
+                value={formData.price}
+                onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Stock Quantity</label>
+              <input
+                type="number"
+                value={formData.stockQuantity}
+                onChange={(e) => setFormData(prev => ({ ...prev, stockQuantity: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="Leave empty for unlimited"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea
+              required
+              rows={3}
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Image URLs</label>
+            {formData.images.map((image, index) => (
+              <div key={index} className="flex gap-2 mb-2">
+                <input
+                  type="url"
+                  value={image}
+                  onChange={(e) => updateImage(index, e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="https://example.com/image.jpg"
+                />
+                {formData.images.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeImageField(index)}
+                    className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addImageField}
+              className="text-green-600 hover:text-green-700 text-sm font-medium"
+            >
+              + Add Another Image
+            </button>
+          </div>
+
+          <div className="flex items-center space-x-6">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.inStock}
+                onChange={(e) => setFormData(prev => ({ ...prev, inStock: e.target.checked }))}
+                className="mr-2"
+              />
+              <span className="text-sm text-gray-700">In Stock</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.featured}
+                onChange={(e) => setFormData(prev => ({ ...prev, featured: e.target.checked }))}
+                className="mr-2"
+              />
+              <span className="text-sm text-gray-700">Featured Product</span>
+            </label>
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+            >
+              {loading ? 'Creating...' : 'Create Product'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Edit Product Form Component
+function EditProductForm({ product, onClose, onSuccess }: { product: any; onClose: () => void; onSuccess: () => void }) {
+  const [formData, setFormData] = useState({
+    name: product.name || '',
+    description: product.description || '',
+    price: product.price?.toString() || '',
+    category: product.category || 'organic',
+    images: product.images || [''],
+    inStock: product.inStock ?? true,
+    featured: product.featured ?? false,
+    stockQuantity: product.stockQuantity?.toString() || ''
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const requestBody = {
+        ...formData,
+        price: parseFloat(formData.price),
+        stockQuantity: formData.stockQuantity ? parseInt(formData.stockQuantity) : undefined,
+        images: formData.images.filter(img => img.trim())
+      };
+
+      console.log('Updating product:', product._id, requestBody);
+      const response = await api.put(`/admin/products/${product._id}`, requestBody);
+
+      if (response.data.success) {
+        console.log('Product updated successfully');
+        onSuccess();
+      } else {
+        console.error('Failed to update product');
+      }
+    } catch (error) {
+      console.error('Error updating product:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addImageField = () => {
+    setFormData(prev => ({ ...prev, images: [...prev.images, ''] }));
+  };
+
+  const removeImageField = (index: number) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      images: prev.images.filter((_, i) => i !== index) 
+    }));
+  };
+
+  const updateImage = (index: number, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.map((img, i) => i === index ? value : img)
+    }));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Edit Product</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Product Name</label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="organic">Organic</option>
+                <option value="handmade">Handmade</option>
+                <option value="eco-friendly">Eco-Friendly</option>
+                <option value="local">Local</option>
+                <option value="olive_oil">Olive Oil</option>
+                <option value="handicraft">Handicraft</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Price ($)</label>
+              <input
+                type="number"
+                step="0.01"
+                required
+                value={formData.price}
+                onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Stock Quantity</label>
+              <input
+                type="number"
+                value={formData.stockQuantity}
+                onChange={(e) => setFormData(prev => ({ ...prev, stockQuantity: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 text-green-500"
+                placeholder="Leave empty for unlimited"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea
+              required
+              rows={3}
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Image URLs</label>
+            {formData.images.map((image, index) => (
+              <div key={index} className="flex gap-2 mb-2">
+                <input
+                  type="url"
+                  value={image}
+                  onChange={(e) => updateImage(index, e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="https://example.com/image.jpg"
+                />
+                {formData.images.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeImageField(index)}
+                    className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addImageField}
+              className="text-green-600 hover:text-green-700 text-sm font-medium"
+            >
+              + Add Another Image
+            </button>
+          </div>
+
+          <div className="flex items-center space-x-6">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.inStock}
+                onChange={(e) => setFormData(prev => ({ ...prev, inStock: e.target.checked }))}
+                className="mr-2"
+              />
+              <span className="text-sm text-gray-700">In Stock</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.featured}
+                onChange={(e) => setFormData(prev => ({ ...prev, featured: e.target.checked }))}
+                className="mr-2"
+              />
+              <span className="text-sm text-gray-700">Featured Product</span>
+            </label>
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+            >
+              {loading ? 'Updating...' : 'Update Product'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Add Tree Form Component
+function AddTreeForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    species: '',
+    location: '',
+    plantedDate: '',
+    height: '',
+    co2Absorbed: '',
+    adoptionPrice: '',
+    description: '',
+    images: [''],
+    benefits: [''],
+    maxAdopters: '',
+    status: 'Available'
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.name.trim() || !formData.species.trim() || !formData.location.trim() || 
+        !formData.adoptionPrice || !formData.description.trim() || !formData.images[0]?.trim()) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const treeData = {
+        ...formData,
+        adoptionPrice: parseFloat(formData.adoptionPrice),
+        maxAdopters: parseInt(formData.maxAdopters) || 10,
+        plantedDate: new Date(formData.plantedDate),
+        images: formData.images.filter(img => img.trim()),
+        benefits: formData.benefits.filter(benefit => benefit.trim())
+      };
+
+      const response = await api.post('/admin/trees', treeData);
+      if (response.data.success) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error('Error creating tree:', error);
+      alert('Error creating tree. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateImage = (index: number, value: string) => {
+    const newImages = [...formData.images];
+    newImages[index] = value;
+    setFormData(prev => ({ ...prev, images: newImages }));
+  };
+
+  const addImageField = () => {
+    setFormData(prev => ({ ...prev, images: [...prev.images, ''] }));
+  };
+
+  const removeImageField = (index: number) => {
+    const newImages = formData.images.filter((_, i) => i !== index);
+    setFormData(prev => ({ ...prev, images: newImages }));
+  };
+
+  const updateBenefit = (index: number, value: string) => {
+    const newBenefits = [...formData.benefits];
+    newBenefits[index] = value;
+    setFormData(prev => ({ ...prev, benefits: newBenefits }));
+  };
+
+  const addBenefitField = () => {
+    setFormData(prev => ({ ...prev, benefits: [...prev.benefits, ''] }));
+  };
+
+  const removeBenefitField = (index: number) => {
+    const newBenefits = formData.benefits.filter((_, i) => i !== index);
+    setFormData(prev => ({ ...prev, benefits: newBenefits }));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-900">Add New Tree</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tree Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="e.g., Mediterranean Olive 'Zeituna'"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Species *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.species}
+                  onChange={(e) => setFormData(prev => ({ ...prev, species: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="e.g., Olea europaea"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Location *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.location}
+                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="e.g., Andalusia, Spain"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Planted Date</label>
+                <input
+                  type="date"
+                  value={formData.plantedDate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, plantedDate: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Height</label>
+                <input
+                  type="text"
+                  value={formData.height}
+                  onChange={(e) => setFormData(prev => ({ ...prev, height: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="e.g., 1.8m"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">CO₂ Absorbed</label>
+                <input
+                  type="text"
+                  value={formData.co2Absorbed}
+                  onChange={(e) => setFormData(prev => ({ ...prev, co2Absorbed: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="e.g., 25kg/year"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Adoption Price *</label>
+                <input
+                  type="number"
+                  required
+                  step="0.01"
+                  value={formData.adoptionPrice}
+                  onChange={(e) => setFormData(prev => ({ ...prev, adoptionPrice: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="99.00"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Max Adopters</label>
+                <input
+                  type="number"
+                  value={formData.maxAdopters}
+                  onChange={(e) => setFormData(prev => ({ ...prev, maxAdopters: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="10"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="Available">Available</option>
+                  <option value="Fully Adopted">Fully Adopted</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+              <textarea
+                required
+                rows={3}
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="Describe the tree and its benefits..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Image URLs *</label>
+              {formData.images.map((image, index) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <input
+                    type="url"
+                    value={image}
+                    onChange={(e) => updateImage(index, e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                  {formData.images.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeImageField(index)}
+                      className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addImageField}
+                className="text-green-600 hover:text-green-700 text-sm font-medium"
+              >
+                + Add Another Image
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Benefits</label>
+              {formData.benefits.map((benefit, index) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={benefit}
+                    onChange={(e) => updateBenefit(index, e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="e.g., Carbon sequestration"
+                  />
+                  {formData.benefits.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeBenefitField(index)}
+                      className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addBenefitField}
+                className="text-green-600 hover:text-green-700 text-sm font-medium"
+              >
+                + Add Another Benefit
+              </button>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+              >
+                {loading ? 'Creating...' : 'Create Tree'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Edit Tree Form Component
+function EditTreeForm({ tree, onClose, onSuccess }: { tree: any; onClose: () => void; onSuccess: () => void }) {
+  const [formData, setFormData] = useState({
+    name: tree.name || '',
+    species: tree.species || '',
+    location: tree.location || '',
+    plantedDate: tree.plantedDate ? new Date(tree.plantedDate).toISOString().split('T')[0] : '',
+    height: tree.height || '',
+    co2Absorbed: tree.co2Absorbed || '',
+    adoptionPrice: tree.adoptionPrice || '',
+    description: tree.description || '',
+    images: tree.images && tree.images.length > 0 ? tree.images : [''],
+    benefits: tree.benefits && tree.benefits.length > 0 ? tree.benefits : [''],
+    maxAdopters: tree.maxAdopters || '',
+    status: tree.status || 'Available'
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    setLoading(true);
+    try {
+      const treeData = {
+        ...formData,
+        adoptionPrice: parseFloat(formData.adoptionPrice),
+        maxAdopters: parseInt(formData.maxAdopters) || 10,
+        plantedDate: new Date(formData.plantedDate),
+        images: formData.images.filter(img => img.trim()),
+        benefits: formData.benefits.filter(benefit => benefit.trim())
+      };
+
+      const response = await api.put(`/admin/trees/${tree._id}`, treeData);
+      if (response.data.success) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error('Error updating tree:', error);
+      alert('Error updating tree. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateImage = (index: number, value: string) => {
+    const newImages = [...formData.images];
+    newImages[index] = value;
+    setFormData(prev => ({ ...prev, images: newImages }));
+  };
+
+  const addImageField = () => {
+    setFormData(prev => ({ ...prev, images: [...prev.images, ''] }));
+  };
+
+  const removeImageField = (index: number) => {
+    const newImages = formData.images.filter((_, i) => i !== index);
+    setFormData(prev => ({ ...prev, images: newImages }));
+  };
+
+  const updateBenefit = (index: number, value: string) => {
+    const newBenefits = [...formData.benefits];
+    newBenefits[index] = value;
+    setFormData(prev => ({ ...prev, benefits: newBenefits }));
+  };
+
+  const addBenefitField = () => {
+    setFormData(prev => ({ ...prev, benefits: [...prev.benefits, ''] }));
+  };
+
+  const removeBenefitField = (index: number) => {
+    const newBenefits = formData.benefits.filter((_, i) => i !== index);
+    setFormData(prev => ({ ...prev, benefits: newBenefits }));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-900">Edit Tree</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tree Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Species *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.species}
+                  onChange={(e) => setFormData(prev => ({ ...prev, species: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Location *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.location}
+                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Planted Date</label>
+                <input
+                  type="date"
+                  value={formData.plantedDate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, plantedDate: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Height</label>
+                <input
+                  type="text"
+                  value={formData.height}
+                  onChange={(e) => setFormData(prev => ({ ...prev, height: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">CO₂ Absorbed</label>
+                <input
+                  type="text"
+                  value={formData.co2Absorbed}
+                  onChange={(e) => setFormData(prev => ({ ...prev, co2Absorbed: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Adoption Price *</label>
+                <input
+                  type="number"
+                  required
+                  step="0.01"
+                  value={formData.adoptionPrice}
+                  onChange={(e) => setFormData(prev => ({ ...prev, adoptionPrice: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Max Adopters</label>
+                <input
+                  type="number"
+                  value={formData.maxAdopters}
+                  onChange={(e) => setFormData(prev => ({ ...prev, maxAdopters: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="Available">Available</option>
+                  <option value="Fully Adopted">Fully Adopted</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+              <textarea
+                required
+                rows={3}
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Image URLs *</label>
+              {formData.images.map((image, index) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <input
+                    type="url"
+                    value={image}
+                    onChange={(e) => updateImage(index, e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                  {formData.images.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeImageField(index)}
+                      className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addImageField}
+                className="text-green-600 hover:text-green-700 text-sm font-medium"
+              >
+                + Add Another Image
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Benefits</label>
+              {formData.benefits.map((benefit, index) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={benefit}
+                    onChange={(e) => updateBenefit(index, e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                  {formData.benefits.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeBenefitField(index)}
+                      className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addBenefitField}
+                className="text-green-600 hover:text-green-700 text-sm font-medium"
+              >
+                + Add Another Benefit
+              </button>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+              >
+                {loading ? 'Updating...' : 'Update Tree'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Add Land Plot Form Component
+function AddLandPlotForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    location: '',
+    description: '',
+    totalTrees: '',
+    adoptionPrice: '',
+    plotSize: '',
+    soilType: '',
+    climate: '',
+    estimatedCO2Absorption: '',
+    images: [''],
+    benefits: [''],
+    status: 'Available'
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.name.trim() || !formData.location.trim() || !formData.description.trim() || 
+        !formData.totalTrees || !formData.adoptionPrice || !formData.images[0]?.trim()) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const landPlotData = {
+        ...formData,
+        totalTrees: parseInt(formData.totalTrees),
+        adoptionPrice: parseFloat(formData.adoptionPrice),
+        images: formData.images.filter(img => img.trim()),
+        benefits: formData.benefits.filter(benefit => benefit.trim())
+      };
+
+      const response = await landPlotService.createLandPlot(landPlotData);
+      if (response.success) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error('Error creating land plot:', error);
+      alert('Error creating land plot. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateImage = (index: number, value: string) => {
+    const newImages = [...formData.images];
+    newImages[index] = value;
+    setFormData(prev => ({ ...prev, images: newImages }));
+  };
+
+  const addImageField = () => {
+    setFormData(prev => ({ ...prev, images: [...prev.images, ''] }));
+  };
+
+  const removeImageField = (index: number) => {
+    const newImages = formData.images.filter((_, i) => i !== index);
+    setFormData(prev => ({ ...prev, images: newImages }));
+  };
+
+  const updateBenefit = (index: number, value: string) => {
+    const newBenefits = [...formData.benefits];
+    newBenefits[index] = value;
+    setFormData(prev => ({ ...prev, benefits: newBenefits }));
+  };
+
+  const addBenefitField = () => {
+    setFormData(prev => ({ ...prev, benefits: [...prev.benefits, ''] }));
+  };
+
+  const removeBenefitField = (index: number) => {
+    const newBenefits = formData.benefits.filter((_, i) => i !== index);
+    setFormData(prev => ({ ...prev, benefits: newBenefits }));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-900">Add New Land Plot</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Plot Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="e.g., Olive Grove North"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Location *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.location}
+                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="e.g., Andalusia, Spain"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Total Trees *</label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  value={formData.totalTrees}
+                  onChange={(e) => setFormData(prev => ({ ...prev, totalTrees: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="100"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Adoption Price *</label>
+                <input
+                  type="number"
+                  required
+                  step="0.01"
+                  value={formData.adoptionPrice}
+                  onChange={(e) => setFormData(prev => ({ ...prev, adoptionPrice: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="99.00"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Plot Size *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.plotSize}
+                  onChange={(e) => setFormData(prev => ({ ...prev, plotSize: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="e.g., 2.5 hectares"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Soil Type *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.soilType}
+                  onChange={(e) => setFormData(prev => ({ ...prev, soilType: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="e.g., Clay loam"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Climate *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.climate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, climate: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="e.g., Mediterranean"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Estimated CO₂ Absorption *</label>
+              <input
+                type="text"
+                required
+                value={formData.estimatedCO2Absorption}
+                onChange={(e) => setFormData(prev => ({ ...prev, estimatedCO2Absorption: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="e.g., 2.5 tons/year"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+              <textarea
+                required
+                rows={3}
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="Describe the land plot and its characteristics..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Image URLs *</label>
+              {formData.images.map((image, index) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <input
+                    type="url"
+                    value={image}
+                    onChange={(e) => updateImage(index, e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                  {formData.images.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeImageField(index)}
+                      className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addImageField}
+                className="text-green-600 hover:text-green-700 text-sm font-medium"
+              >
+                + Add Another Image
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Benefits</label>
+              {formData.benefits.map((benefit, index) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={benefit}
+                    onChange={(e) => updateBenefit(index, e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="e.g., Carbon sequestration"
+                  />
+                  {formData.benefits.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeBenefitField(index)}
+                      className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addBenefitField}
+                className="text-green-600 hover:text-green-700 text-sm font-medium"
+              >
+                + Add Another Benefit
+              </button>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+              >
+                {loading ? 'Creating...' : 'Create Land Plot'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Edit Land Plot Form Component
+function EditLandPlotForm({ landPlot, onClose, onSuccess }: { landPlot: LandPlot; onClose: () => void; onSuccess: () => void }) {
+  const [formData, setFormData] = useState({
+    name: landPlot.name || '',
+    location: landPlot.location || '',
+    description: landPlot.description || '',
+    totalTrees: landPlot.totalTrees || '',
+    adoptionPrice: landPlot.adoptionPrice || '',
+    plotSize: landPlot.plotSize || '',
+    soilType: landPlot.soilType || '',
+    climate: landPlot.climate || '',
+    estimatedCO2Absorption: landPlot.estimatedCO2Absorption || '',
+    images: landPlot.images && landPlot.images.length > 0 ? landPlot.images : [''],
+    benefits: landPlot.benefits && landPlot.benefits.length > 0 ? landPlot.benefits : [''],
+    status: landPlot.status || 'Available'
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    setLoading(true);
+    try {
+      const landPlotData = {
+        ...formData,
+        totalTrees: parseInt(formData.totalTrees),
+        adoptionPrice: parseFloat(formData.adoptionPrice),
+        images: formData.images.filter(img => img.trim()),
+        benefits: formData.benefits.filter(benefit => benefit.trim())
+      };
+
+      const response = await landPlotService.updateLandPlot(landPlot._id, landPlotData);
+      if (response.success) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error('Error updating land plot:', error);
+      alert('Error updating land plot. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateImage = (index: number, value: string) => {
+    const newImages = [...formData.images];
+    newImages[index] = value;
+    setFormData(prev => ({ ...prev, images: newImages }));
+  };
+
+  const addImageField = () => {
+    setFormData(prev => ({ ...prev, images: [...prev.images, ''] }));
+  };
+
+  const removeImageField = (index: number) => {
+    const newImages = formData.images.filter((_, i) => i !== index);
+    setFormData(prev => ({ ...prev, images: newImages }));
+  };
+
+  const updateBenefit = (index: number, value: string) => {
+    const newBenefits = [...formData.benefits];
+    newBenefits[index] = value;
+    setFormData(prev => ({ ...prev, benefits: newBenefits }));
+  };
+
+  const addBenefitField = () => {
+    setFormData(prev => ({ ...prev, benefits: [...prev.benefits, ''] }));
+  };
+
+  const removeBenefitField = (index: number) => {
+    const newBenefits = formData.benefits.filter((_, i) => i !== index);
+    setFormData(prev => ({ ...prev, benefits: newBenefits }));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-900">Edit Land Plot</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Plot Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Location *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.location}
+                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Total Trees *</label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  value={formData.totalTrees}
+                  onChange={(e) => setFormData(prev => ({ ...prev, totalTrees: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Adoption Price *</label>
+                <input
+                  type="number"
+                  required
+                  step="0.01"
+                  value={formData.adoptionPrice}
+                  onChange={(e) => setFormData(prev => ({ ...prev, adoptionPrice: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Plot Size *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.plotSize}
+                  onChange={(e) => setFormData(prev => ({ ...prev, plotSize: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Soil Type *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.soilType}
+                  onChange={(e) => setFormData(prev => ({ ...prev, soilType: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Climate *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.climate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, climate: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Estimated CO₂ Absorption *</label>
+              <input
+                type="text"
+                required
+                value={formData.estimatedCO2Absorption}
+                onChange={(e) => setFormData(prev => ({ ...prev, estimatedCO2Absorption: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+              <textarea
+                required
+                rows={3}
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Image URLs *</label>
+              {formData.images.map((image, index) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <input
+                    type="url"
+                    value={image}
+                    onChange={(e) => updateImage(index, e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                  {formData.images.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeImageField(index)}
+                      className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addImageField}
+                className="text-green-600 hover:text-green-700 text-sm font-medium"
+              >
+                + Add Another Image
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Benefits</label>
+              {formData.benefits.map((benefit, index) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={benefit}
+                    onChange={(e) => updateBenefit(index, e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                  {formData.benefits.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeBenefitField(index)}
+                      className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addBenefitField}
+                className="text-green-600 hover:text-green-700 text-sm font-medium"
+              >
+                + Add Another Benefit
+              </button>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+              >
+                {loading ? 'Updating...' : 'Update Land Plot'}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
@@ -316,10 +2270,34 @@ function AdminTrees() {
 export default function AdminDashboard() {
   const location = useLocation();
   
+  // Debug: Check user authentication
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    console.log('AdminDashboard - Token:', token ? 'Present' : 'Missing');
+    
+    // Check if user is logged in and has admin role
+    const checkAuth = async () => {
+      try {
+        const response = await api.get('/auth/profile');
+        console.log('User profile:', response.data);
+        if (response.data.user.role !== 'admin') {
+          console.error('User is not admin:', response.data.user.role);
+        }
+      } catch (error) {
+        console.error('Failed to get user profile:', error);
+      }
+    };
+    
+    if (token) {
+      checkAuth();
+    }
+  }, []);
+  
   const navigation = [
     { name: 'Overview', href: '/admin', icon: BarChart3, current: location.pathname === '/admin' },
     { name: 'Users', href: '/admin/users', icon: Users, current: location.pathname === '/admin/users' },
     { name: 'Products', href: '/admin/products', icon: ShoppingBag, current: location.pathname === '/admin/products' },
+    { name: 'Land Plots', href: '/admin/land-plots', icon: TreePine, current: location.pathname === '/admin/land-plots' },
     { name: 'Trees', href: '/admin/trees', icon: TreePine, current: location.pathname === '/admin/trees' },
     { name: 'Settings', href: '/admin/settings', icon: Settings, current: location.pathname === '/admin/settings' }
   ];
@@ -368,6 +2346,7 @@ export default function AdminDashboard() {
             <Route path="/" element={<AdminOverview />} />
             <Route path="/users" element={<AdminUsers />} />
             <Route path="/products" element={<AdminProducts />} />
+            <Route path="/land-plots" element={<AdminLandPlots />} />
             <Route path="/trees" element={<AdminTrees />} />
             <Route path="/settings" element={<div>Settings coming soon...</div>} />
           </Routes>

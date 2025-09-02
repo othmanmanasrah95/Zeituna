@@ -3,22 +3,20 @@ const hre = require("hardhat");
 async function main() {
     const [deployer] = await hre.ethers.getSigners();
 
-    console.log("Deploying contracts with account:", deployer.address);
+    console.log("Deploying TUTToken with account:", deployer.address);
     console.log("Account balance:", (await deployer.getBalance()).toString());
 
-    // Deploy TUTToken (no constructor arguments)
+    // Deploy TUTToken (no constructor arguments needed)
     const TUT = await hre.ethers.getContractFactory("TUTToken");
     const tut = await TUT.deploy();
     await tut.deployed();
 
-    // Deploy ZYTTreeNFT (no constructor arguments)
-    const ZYT = await hre.ethers.getContractFactory("ZYTTreeNFT");
-    const zyt = await ZYT.deploy();
-    await zyt.waitForDeployment();
-
     console.log("TUTToken deployed to:", tut.address);
-    console.log("ZYTTreeNFT deployed to:", await zyt.getAddress());
-    console.log("Deployer is now the owner of both contracts");
+    console.log("Deployer is now the owner of TUTToken");           
+    
+    // Verify the deployment
+    const maxSupply = await tut.MAX_SUPPLY();
+    console.log("Max supply:", hre.ethers.utils.formatEther(maxSupply), "TUT");
 }
 
 main().catch((error) => {

@@ -5,8 +5,9 @@ export interface Product {
   name: string;
   description: string;
   price: number;
+  originalPrice?: number;
   images: string[];
-  category: 'organic' | 'handmade' | 'eco-friendly' | 'local';
+  category: 'organic' | 'handmade' | 'eco-friendly' | 'local' | 'olive_oil' | 'handicraft';
   rating: number;
   reviews: Review[];
   inStock: boolean;
@@ -14,6 +15,19 @@ export interface Product {
   seller: {
     _id: string;
     name: string;
+  };
+  // Additional properties for detailed view
+  features?: string[];
+  specifications?: Record<string, string>;
+  stockQuantity?: number;
+  shipping?: {
+    free: boolean;
+    estimatedDays: string;
+  };
+  sustainability?: {
+    carbonNeutral: boolean;
+    locallySourced: boolean;
+    plasticFree: boolean;
   };
 }
 

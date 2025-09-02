@@ -1,106 +1,11 @@
-import React, { useState } from 'react';
-import { MapPin, Calendar, Leaf, Heart, Users, Award, TreePine, Coins, ArrowRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MapPin, Heart, Users, Award, TreePine, Coins, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
+import landPlotService, { LandPlot } from '../services/landPlotService';
 
-interface Tree {
-  id: string;
-  name: string;
-  species: string;
-  location: string;
-  plantedDate: string;
-  age: string;
-  height: string;
-  co2Absorbed: string;
-  adoptionPrice: number;
-  image: string;
-  description: string;
-  benefits: string[];
-  adopters: number;
-  maxAdopters: number;
-  progress: number;
-  farmerId: string;
-  farmerName: string;
-}
 
-const mockTrees: Tree[] = [
-  {
-    id: 't1',
-    name: 'Mediterranean Oak "Sophia"',
-    species: 'Quercus ilex',
-    location: 'Sierra Nevada, Spain',
-    plantedDate: '2023-03-15',
-    age: '2 years',
-    height: '1.8m',
-    co2Absorbed: '25kg/year',
-    adoptionPrice: 99.00,
-    image: 'https://images.pexels.com/photos/3338681/pexels-photo-3338681.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=2',
-    description: 'A young Mediterranean oak that will grow to provide shade and habitat for local wildlife.',
-    benefits: ['Carbon sequestration', 'Wildlife habitat', 'Soil erosion prevention', 'Air purification'],
-    adopters: 8,
-    maxAdopters: 10,
-    progress: 80,
-    farmerId: 'f1',
-    farmerName: 'Carlos Mendez'
-  },
-  {
-    id: 't2',
-    name: 'Olive Heritage "Luna"',
-    species: 'Olea europaea',
-    location: 'Andalusia, Spain',
-    plantedDate: '2023-09-10',
-    age: '1.5 years',
-    height: '1.2m',
-    co2Absorbed: '20kg/year',
-    adoptionPrice: 99.00,
-    image: 'https://images.pexels.com/photos/4464816/pexels-photo-4464816.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=2',
-    description: 'A young olive tree that will produce olives for generations while preserving traditional agriculture.',
-    benefits: ['Olive production', 'Traditional farming', 'Drought resistance', 'Cultural value'],
-    adopters: 6,
-    maxAdopters: 8,
-    progress: 75,
-    farmerId: 'f2',
-    farmerName: 'Maria Rodriguez'
-  },
-  {
-    id: 't3',
-    name: 'Ancient Olive "Esperanza"',
-    species: 'Olea europaea',
-    location: 'Tuscany, Italy',
-    plantedDate: '2022-11-20',
-    age: '3 years',
-    height: '2.1m',
-    co2Absorbed: '30kg/year',
-    adoptionPrice: 99.00,
-    image: 'https://images.pexels.com/photos/1426718/pexels-photo-1426718.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=2',
-    description: 'A heritage olive tree that connects you to centuries of Mediterranean tradition.',
-    benefits: ['Heritage preservation', 'Premium olive oil', 'Cultural significance', 'Biodiversity'],
-    adopters: 12,
-    maxAdopters: 15,
-    progress: 80,
-    farmerId: 'f3',
-    farmerName: 'Giuseppe Rossi'
-  },
-  {
-    id: 't4',
-    name: 'Young Olive "Vida"',
-    species: 'Olea europaea',
-    location: 'Crete, Greece',
-    plantedDate: '2024-01-15',
-    age: '1 year',
-    height: '0.8m',
-    co2Absorbed: '15kg/year',
-    adoptionPrice: 99.00,
-    image: 'https://images.pexels.com/photos/3571551/pexels-photo-3571551.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=2',
-    description: 'A newly planted olive tree ready to grow with your support and care.',
-    benefits: ['New growth potential', 'Future olive production', 'Climate adaptation', 'Soil improvement'],
-    adopters: 3,
-    maxAdopters: 10,
-    progress: 30,
-    farmerId: 'f4',
-    farmerName: 'Dimitris Papadopoulos'
-  }
-];
 
 const adoptionFeatures = [
   {
@@ -126,19 +31,72 @@ const adoptionFeatures = [
 ];
 
 export default function AdoptTree() {
-  const [selectedTree, setSelectedTree] = useState<Tree | null>(null);
   const { addItem } = useCart();
+  const [landPlots, setLandPlots] = useState<LandPlot[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAdoptTree = (tree: Tree) => {
+  useEffect(() => {
+    const fetchLandPlots = async () => {
+      try {
+        setLoading(true);
+        console.log('Fetching land plots with status: Available');
+        const response = await landPlotService.getLandPlots({ status: 'Available' });
+        console.log('Land plots API response:', response);
+        
+        if (response.success && response.data.length > 0) {
+          console.log('Found land plots:', response.data);
+          setLandPlots(response.data);
+        } else {
+          console.log('No land plots found or response not successful');
+          setError('No land plots available for adoption');
+        }
+      } catch (err: any) {
+        console.error('Error fetching land plots:', err);
+        console.error('Error details:', err.response?.data);
+        setError('Failed to load land plot information');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLandPlots();
+  }, []);
+
+  const handleAdoptTree = (landPlot: LandPlot) => {
     addItem({
-      id: tree.id,
-      name: `Tree Adoption - ${tree.name}`,
-      price: tree.adoptionPrice,
-      image: tree.image,
+      id: landPlot._id,
+      name: `Tree Adoption - ${landPlot.name}`,
+      price: landPlot.adoptionPrice,
+      image: landPlot.images[0] || '/treewihte1.png',
       type: 'tree'
     });
-    setSelectedTree(null);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading tree information...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || landPlots.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-600 mb-4">
+            <TreePine className="w-16 h-16 mx-auto mb-2" />
+            <h2 className="text-2xl font-bold">No Land Plots Available</h2>
+            <p className="text-gray-600 mt-2">{error || 'No land plots are currently available for adoption.'}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
@@ -152,8 +110,8 @@ export default function AdoptTree() {
               transition={{ duration: 0.8 }}
               className="text-4xl md:text-6xl font-bold text-gray-900 mb-6"
             >
-              Adopt an
-              <span className="text-green-600"> Olive Tree</span>
+              Adopt a Tree from
+              <span className="text-green-600"> Our Land Plots</span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 50 }}
@@ -161,8 +119,8 @@ export default function AdoptTree() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="text-xl text-gray-600 max-w-3xl mx-auto mb-8"
             >
-              Symbolically adopt an existing olive tree for $99/year. Receive an NFT certificate, 
-              earn TUT tokens, and directly support Mediterranean farmers.
+              Choose from our carefully managed land plots and adopt a tree for $99/year. 
+              Receive an NFT certificate, earn TUT tokens, and directly support Mediterranean farmers.
             </motion.p>
 
             {/* Adoption Package Highlight */}
@@ -180,7 +138,7 @@ export default function AdoptTree() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {adoptionFeatures.map((feature, index) => (
-                  <div key={feature.title} className="text-center">
+                  <div key={index} className="text-center">
                     <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
                       <feature.icon className="w-6 h-6 text-green-600" />
                     </div>
@@ -194,7 +152,7 @@ export default function AdoptTree() {
         </div>
       </section>
 
-      {/* Available Trees */}
+      {/* Land Plots for Adoption */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -204,120 +162,133 @@ export default function AdoptTree() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Choose Your Tree to Adopt
+              Choose Your Land Plot
             </h2>
             <p className="text-xl text-gray-600">
-              Each adoption includes NFT certificate, TUT tokens, and farmer support
+              Select from our managed land plots and adopt a tree to make a real environmental impact
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {mockTrees.map((tree, index) => (
+            {landPlots.map((landPlot, index) => (
               <motion.div
-                key={tree.id}
+                key={landPlot._id}
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: index * 0.2 }}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300"
+                className="bg-white rounded-3xl shadow-2xl overflow-hidden hover:shadow-3xl transition-all duration-500"
               >
                 <div className="relative">
                   <img
-                    src={tree.image}
-                    alt={tree.name}
+                    src={landPlot.images[0] || '/treewihte1.png'}
+                    alt={landPlot.name}
                     className="w-full h-64 object-cover"
                   />
-                  <div className="absolute top-4 left-4 bg-green-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                    {tree.species}
+                  <div className="absolute top-6 left-6 bg-green-600 text-white px-4 py-2 rounded-full text-sm font-medium">
+                    {landPlot.plotSize}
                   </div>
-                  <div className="absolute top-4 right-4 bg-white bg-opacity-90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium text-gray-800">
-                    ${tree.adoptionPrice}/year
+                  <div className="absolute top-6 right-6 bg-white bg-opacity-95 backdrop-blur-sm px-4 py-2 rounded-full text-lg font-bold text-gray-800">
+                    ${landPlot.adoptionPrice}/year
                   </div>
                 </div>
 
                 <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-1">{tree.name}</h3>
-                      <div className="flex items-center text-gray-600 text-sm mb-2">
-                        <MapPin className="w-4 h-4 mr-1" />
-                        {tree.location}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Farmer: <span className="font-medium">{tree.farmerName}</span>
-                      </div>
+                  <div className="text-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{landPlot.name}</h3>
+                    <div className="flex items-center justify-center text-gray-600 text-sm mb-2">
+                      <MapPin className="w-4 h-4 mr-2" />
+                      {landPlot.location}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Farmer: <span className="font-semibold text-green-600">{landPlot.farmer.name}</span>
                     </div>
                   </div>
 
-                  <p className="text-gray-600 mb-4">{tree.description}</p>
+                  <p className="text-gray-600 text-center mb-6 leading-relaxed">
+                    {landPlot.description}
+                  </p>
 
-                  {/* Tree Stats */}
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <div className="text-sm text-gray-600">Age</div>
-                      <div className="font-semibold text-gray-900">{tree.age}</div>
+                  {/* Land Plot Stats */}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 text-center">
+                      <div className="text-sm text-gray-600 mb-1">Total Trees</div>
+                      <div className="text-lg font-bold text-gray-900">{landPlot.totalTrees}</div>
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <div className="text-sm text-gray-600">Height</div>
-                      <div className="font-semibold text-gray-900">{tree.height}</div>
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 text-center">
+                      <div className="text-sm text-gray-600 mb-1">Available</div>
+                      <div className="text-lg font-bold text-green-600">{landPlot.availableTrees}</div>
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <div className="text-sm text-gray-600">CO₂ Absorbed</div>
-                      <div className="font-semibold text-green-600">{tree.co2Absorbed}</div>
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 text-center">
+                      <div className="text-sm text-gray-600 mb-1">Adopted</div>
+                      <div className="text-lg font-bold text-blue-600">{landPlot.adoptedTrees}</div>
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <div className="text-sm text-gray-600">Planted</div>
-                      <div className="font-semibold text-gray-900">
-                        {new Date(tree.plantedDate).toLocaleDateString()}
-                      </div>
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 text-center">
+                      <div className="text-sm text-gray-600 mb-1">CO₂ Impact</div>
+                      <div className="text-lg font-bold text-green-600">{landPlot.estimatedCO2Absorption}</div>
                     </div>
                   </div>
 
                   {/* Adoption Progress */}
                   <div className="mb-6">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-700">Adoption Progress</span>
+                      <span className="text-sm font-semibold text-gray-700">Adoption Progress</span>
                       <span className="text-sm text-gray-600">
-                        {tree.adopters}/{tree.maxAdopters} adopters
+                        {landPlot.adoptedTrees}/{landPlot.totalTrees} trees adopted
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
-                        className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${tree.progress}%` }}
+                        className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${landPlot.adoptionProgress}%` }}
                       ></div>
                     </div>
+                    <p className="text-xs text-gray-500 mt-1 text-center">
+                      {landPlot.availableTrees} trees available for adoption
+                    </p>
                   </div>
 
                   {/* Benefits */}
                   <div className="mb-6">
-                    <h4 className="font-semibold text-gray-900 mb-2">Benefits:</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {tree.benefits.map((benefit) => (
-                        <span
-                          key={benefit}
-                          className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3 text-center">Plot Benefits</h4>
+                    <div className="grid grid-cols-1 gap-2">
+                      {landPlot.benefits.slice(0, 3).map((benefit, index) => (
+                        <div
+                          key={index}
+                          className="bg-green-50 border border-green-200 text-green-800 text-xs px-3 py-2 rounded-lg text-center font-medium"
                         >
                           {benefit}
-                        </span>
+                        </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setSelectedTree(tree)}
-                      className="flex-1 border-2 border-green-600 text-green-600 py-3 rounded-lg hover:bg-green-50 transition-colors font-medium"
+                  {/* Action Buttons */}
+                  <div className="space-y-3">
+                    {/* Learn More Button */}
+                    <Link
+                      to={`/land-plot/${landPlot._id}`}
+                      className="w-full py-3 px-6 rounded-xl transition-all duration-300 font-bold text-sm flex items-center justify-center shadow-lg hover:shadow-xl transform hover:-translate-y-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800"
                     >
+                      <Info className="w-4 h-4 mr-2" />
                       Learn More
-                    </button>
+                    </Link>
+                    
+                    {/* Adoption Button */}
                     <button
-                      onClick={() => handleAdoptTree(tree)}
-                      className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center"
+                      onClick={() => handleAdoptTree(landPlot)}
+                      disabled={landPlot.availableTrees === 0}
+                      className={`w-full py-3 px-6 rounded-xl transition-all duration-300 font-bold text-sm flex items-center justify-center shadow-lg hover:shadow-xl transform hover:-translate-y-1 ${
+                        landPlot.availableTrees === 0
+                          ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800'
+                      }`}
                     >
-                      <Heart className="w-5 h-5 mr-2" />
-                      Adopt Now
+                      <Heart className="w-4 h-4 mr-2" />
+                      {landPlot.availableTrees === 0 ? 'Fully Adopted' : `Adopt a Tree - $${landPlot.adoptionPrice}/year`}
                     </button>
+                    <p className="text-xs text-gray-500 text-center">
+                      {landPlot.availableTrees > 0 ? 'Secure payment • Instant confirmation' : 'Check back for new trees'}
+                    </p>
                   </div>
                 </div>
               </motion.div>
@@ -331,10 +302,10 @@ export default function AdoptTree() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              How Tree Adoption Works
+              How Land Plot Adoption Works
             </h2>
             <p className="text-xl text-gray-600">
-              Simple steps to make a lasting environmental impact
+              Simple steps to adopt a tree from our managed land plots
             </p>
           </div>
 
@@ -342,13 +313,13 @@ export default function AdoptTree() {
             {[
               {
                 step: 1,
-                title: 'Choose Your Tree',
-                description: 'Browse available olive trees and select one that resonates with you',
+                title: 'Choose Land Plot',
+                description: 'Select from our managed land plots and adopt a tree',
                 icon: TreePine
               },
               {
                 step: 2,
-                title: 'Complete Adoption',
+                title: 'Complete Payment',
                 description: 'Pay $99 for one-year symbolic adoption with instant confirmation',
                 icon: Heart
               },
@@ -384,93 +355,7 @@ export default function AdoptTree() {
         </div>
       </section>
 
-      {/* Tree Detail Modal */}
-      {selectedTree && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-          onClick={() => setSelectedTree(null)}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="relative">
-              <img
-                src={selectedTree.image}
-                alt={selectedTree.name}
-                className="w-full h-64 object-cover rounded-t-2xl"
-              />
-              <button
-                onClick={() => setSelectedTree(null)}
-                className="absolute top-4 right-4 bg-white bg-opacity-90 backdrop-blur-sm w-10 h-10 rounded-full flex items-center justify-center hover:bg-opacity-100 transition-colors"
-              >
-                ×
-              </button>
-            </div>
 
-            <div className="p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedTree.name}</h2>
-              <p className="text-gray-600 mb-6">{selectedTree.description}</p>
-
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-sm text-gray-600 mb-1">Species</div>
-                  <div className="font-semibold">{selectedTree.species}</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-sm text-gray-600 mb-1">Location</div>
-                  <div className="font-semibold">{selectedTree.location}</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-sm text-gray-600 mb-1">Farmer</div>
-                  <div className="font-semibold">{selectedTree.farmerName}</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-sm text-gray-600 mb-1">Age</div>
-                  <div className="font-semibold">{selectedTree.age}</div>
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <h3 className="font-semibold text-gray-900 mb-3">Adoption Benefits</h3>
-                <div className="space-y-2">
-                  {selectedTree.benefits.map((benefit) => (
-                    <div key={benefit} className="flex items-center">
-                      <Leaf className="w-4 h-4 text-green-600 mr-2" />
-                      <span className="text-gray-700">{benefit}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-green-50 rounded-lg p-4 mb-6">
-                <h4 className="font-semibold text-green-900 mb-2">What You Get:</h4>
-                <ul className="text-sm text-green-800 space-y-1">
-                  <li>• Digital NFT Certificate of Adoption (1 year)</li>
-                  <li>• $33 worth of TUT tokens in your wallet</li>
-                  <li>• Your name in the tree's permanent history</li>
-                  <li>• Direct support to farmer {selectedTree.farmerName}</li>
-                  <li>• Renewal reminders before expiration</li>
-                </ul>
-              </div>
-
-              <button
-                onClick={() => handleAdoptTree(selectedTree)}
-                className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center"
-              >
-                <Heart className="w-5 h-5 mr-2" />
-                Adopt for ${selectedTree.adoptionPrice}/year
-              </button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
     </div>
   );
 }
