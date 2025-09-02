@@ -11,11 +11,13 @@ import {
   DollarSign,
   Package,
   Leaf,
-  X
+  X,
+  Tag
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '../../config/api';
 import landPlotService, { LandPlot } from '../../services/landPlotService';
+import DiscountManagement from '../../components/admin/DiscountManagement';
 
 // Admin Components
 function AdminOverview() {
@@ -2299,6 +2301,7 @@ export default function AdminDashboard() {
     { name: 'Products', href: '/admin/products', icon: ShoppingBag, current: location.pathname === '/admin/products' },
     { name: 'Land Plots', href: '/admin/land-plots', icon: TreePine, current: location.pathname === '/admin/land-plots' },
     { name: 'Trees', href: '/admin/trees', icon: TreePine, current: location.pathname === '/admin/trees' },
+    { name: 'Discounts', href: '/admin/discounts', icon: Tag, current: location.pathname === '/admin/discounts' },
     { name: 'Settings', href: '/admin/settings', icon: Settings, current: location.pathname === '/admin/settings' }
   ];
 
@@ -2348,6 +2351,7 @@ export default function AdminDashboard() {
             <Route path="/products" element={<AdminProducts />} />
             <Route path="/land-plots" element={<AdminLandPlots />} />
             <Route path="/trees" element={<AdminTrees />} />
+            <Route path="/discounts" element={<DiscountManagement />} />
             <Route path="/settings" element={<div>Settings coming soon...</div>} />
           </Routes>
         </div>

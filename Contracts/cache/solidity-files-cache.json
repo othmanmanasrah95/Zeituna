@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "C:\\src\\Zeituna\\Contracts\\contracts\\TUTToken.sol": {
-      "lastModificationDate": 1756556972261,
-      "contentHash": "7dbb852692aa02202095773896051a3b",
+      "lastModificationDate": 1756831058025,
+      "contentHash": "bf3c945702d7c633db5d4073f511145f",
       "sourceName": "contracts/TUTToken.sol",
       "solcConfig": {
         "version": "0.8.24",

@@ -1,9 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Edit, Save, X, Wallet, ImagePlus, Mail, Lock, LogOut, User as UserIcon, ExternalLink, MapPin, CalendarDays, Trees, ArrowRight } from 'lucide-react';
+import { Edit, Save, X, Wallet, ImagePlus, Mail, Lock, LogOut, User as UserIcon, ExternalLink, MapPin, CalendarDays, Trees, ArrowRight, Unlink } from 'lucide-react';
 import authService from '../services/authService';
 import walletService from '../services/walletService';
 import { useNavigate } from 'react-router-dom';
+import TokenBalance from '../components/TokenBalance';
+import TokenOperations from '../components/TokenOperations';
+import NetworkConfig from '../components/NetworkConfig';
+import UserDiscountCodes from '../components/UserDiscountCodes';
 
 export default function Profile() {
   const { user, loading, logout, refreshProfile } = useAuth() as any;
@@ -14,6 +18,7 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
   const [, setIsWalletConnected] = useState<boolean>(false);
+  const [disconnecting, setDisconnecting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -95,6 +100,33 @@ export default function Profile() {
       setFormError(err.response?.data?.error || 'Failed to update profile');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDisconnectWallet = async () => {
+    if (!confirm('Are you sure you want to disconnect your wallet? This will remove the wallet from your account.')) {
+      return;
+    }
+
+    setDisconnecting(true);
+    setFormError('');
+    setSuccess('');
+
+    try {
+      // Disconnect from backend
+      await authService.disconnectWallet();
+      
+      // Disconnect from wallet service
+      walletService.disconnectWallet();
+      
+      // Refresh user profile
+      await refreshProfile?.();
+      
+      setSuccess('Wallet disconnected successfully!');
+    } catch (err: any) {
+      setFormError(err.response?.data?.error || 'Failed to disconnect wallet');
+    } finally {
+      setDisconnecting(false);
     }
   };
 
@@ -264,7 +296,17 @@ export default function Profile() {
                     >
                       Add Wallet <ExternalLink className="w-4 h-4 ml-1" />
                     </button>
-                  ) : null}
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleDisconnectWallet}
+                      disabled={disconnecting}
+                      className="inline-flex items-center px-3 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700 disabled:opacity-50"
+                    >
+                      <Unlink className="w-4 h-4 mr-1" />
+                      {disconnecting ? 'Disconnecting...' : 'Disconnect'}
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -289,6 +331,33 @@ export default function Profile() {
                 )}
               </div>
             </form>
+          </div>
+
+          {/* Network Configuration Section */}
+          <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 mt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Network Configuration</h3>
+            <NetworkConfig />
+          </div>
+
+          {/* Token Balance Section */}
+          {user.walletAddress && (
+            <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 mt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">TUT Token Balance</h3>
+              <TokenBalance address={user.walletAddress} />
+            </div>
+          )}
+
+          {/* Token Operations Section */}
+          {user.walletAddress && (
+            <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 mt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Token Operations</h3>
+              <TokenOperations />
+            </div>
+          )}
+
+          {/* Discount Codes Section */}
+          <div className="mt-6">
+            <UserDiscountCodes />
           </div>
 
           <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 mt-6">

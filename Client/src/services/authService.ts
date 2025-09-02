@@ -78,6 +78,12 @@ const authService = {
     return response.data;
   },
 
+  // Disconnect wallet from user account
+  disconnectWallet: async (): Promise<{ success: boolean; message: string }> => {
+    const response = await api.post('/auth/disconnect-wallet');
+    return response.data;
+  },
+
   // Logout user
   logout: () => {
     localStorage.removeItem('token');
