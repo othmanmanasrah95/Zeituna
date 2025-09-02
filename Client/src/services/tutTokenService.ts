@@ -90,6 +90,12 @@ class TUTTokenService {
 
   // Initialize contract connection
   async initialize(): Promise<void> {
+    // Ensure wallet is connected first
+    const isConnected = await walletService.ensureConnected();
+    if (!isConnected) {
+      throw new Error('Wallet not connected');
+    }
+
     const provider = walletService.getProvider();
     const signer = walletService.getSigner();
     

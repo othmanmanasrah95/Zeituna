@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Wifi, AlertTriangle, CheckCircle2, ExternalLink } from 'lucide-react';
-import walletService from '../services/walletService';
+import { useWallet } from '../contexts/WalletContext';
 import tutTokenService from '../services/tutTokenService';
 
 interface NetworkInfo {
@@ -32,31 +32,21 @@ const SUPPORTED_NETWORKS: Record<number, NetworkInfo> = {
 };
 
 export default function NetworkConfig() {
+  const { isConnected, chainId } = useWallet();
   const [currentNetwork, setCurrentNetwork] = useState<NetworkInfo | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
   const [contractSupported, setContractSupported] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     checkNetworkStatus();
-    
-    // Listen for network changes
-    walletService.onChainChanged(handleNetworkChange);
-    
-    return () => {
-      walletService.removeListeners();
-    };
-  }, []);
+  }, [isConnected, chainId]);
 
   const checkNetworkStatus = async () => {
     setLoading(true);
     
     try {
-      const walletInfo = await walletService.getWalletInfo();
-      setIsConnected(!!walletInfo?.isConnected);
-      
-      if (walletInfo?.chainId) {
-        const network = SUPPORTED_NETWORKS[walletInfo.chainId];
+      if (isConnected && chainId) {
+        const network = SUPPORTED_NETWORKS[chainId];
         setCurrentNetwork(network || null);
         
         // Check if contract is supported on this network
@@ -65,15 +55,18 @@ export default function NetworkConfig() {
             await tutTokenService.initialize();
             setContractSupported(true);
           } catch (error) {
+            console.error('Error initializing TUTTokenService:', error);
             setContractSupported(false);
           }
         } else {
           setContractSupported(false);
         }
+      } else {
+        setCurrentNetwork(null);
+        setContractSupported(false);
       }
     } catch (error) {
       console.error('Error checking network status:', error);
-      setIsConnected(false);
       setCurrentNetwork(null);
       setContractSupported(false);
     } finally {
@@ -81,13 +74,8 @@ export default function NetworkConfig() {
     }
   };
 
-  const handleNetworkChange = (chainId: string) => {
-    // Network changed, refresh status
-    setTimeout(checkNetworkStatus, 1000);
-  };
-
   const switchToSepolia = async () => {
-    if (!walletService.isMetaMaskInstalled()) {
+    if (typeof window === 'undefined' || !window.ethereum) {
       alert('MetaMask is not installed');
       return;
     }

@@ -4,6 +4,7 @@ const { protect, authorize } = require('../middleware/auth');
 const {
   getOverview,
   getUsers,
+  createUser,
   updateUserRole,
   deleteUser,
   getProducts,
@@ -32,6 +33,7 @@ router.get('/overview', getOverview);
 
 // User management routes
 router.get('/users', getUsers);
+router.post('/users', createUser);
 router.put('/users/:id/role', updateUserRole);
 router.delete('/users/:id', deleteUser);
 

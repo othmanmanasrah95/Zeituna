@@ -77,6 +77,49 @@ exports.getUsers = async (req, res) => {
   }
 };
 
+// @desc    Create new user
+// @route   POST /api/admin/users
+// @access  Private/Admin
+exports.createUser = async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
+
+    // Check if user exists
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({
+        success: false,
+        error: 'User already exists'
+      });
+    }
+
+    // Create new user
+    const newUser = new User({ 
+      name, 
+      email, 
+      password, 
+      role: role || 'user'
+    });
+    await newUser.save();
+
+    res.status(201).json({
+      success: true,
+      data: {
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        createdAt: newUser.createdAt
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
 // @desc    Update user role
 // @route   PUT /api/admin/users/:id/role
 // @access  Private/Admin

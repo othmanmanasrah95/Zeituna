@@ -9,6 +9,7 @@ export interface WalletInfo {
 class WalletService {
   private provider: ethers.BrowserProvider | null = null;
   private signer: ethers.JsonRpcSigner | null = null;
+  private connectionPromise: Promise<boolean> | null = null;
 
   // Check if MetaMask is installed
   isMetaMaskInstalled(): boolean {
@@ -24,6 +25,36 @@ class WalletService {
       return accounts.length > 0;
     } catch (error) {
       console.error('Error checking MetaMask connection:', error);
+      return false;
+    }
+  }
+
+  // Restore wallet connection if MetaMask is already connected
+  async restoreConnection(): Promise<boolean> {
+    if (!this.isMetaMaskInstalled()) return false;
+    
+    // If there's already a connection attempt in progress, wait for it
+    if (this.connectionPromise) {
+      return await this.connectionPromise;
+    }
+    
+    this.connectionPromise = this._doRestoreConnection();
+    const result = await this.connectionPromise;
+    this.connectionPromise = null;
+    return result;
+  }
+
+  private async _doRestoreConnection(): Promise<boolean> {
+    try {
+      const accounts = await window.ethereum!.request({ method: 'eth_accounts' });
+      if (accounts.length > 0 && !this.provider) {
+        this.provider = new ethers.BrowserProvider(window.ethereum!);
+        this.signer = await this.provider.getSigner();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error restoring wallet connection:', error);
       return false;
     }
   }
@@ -77,6 +108,12 @@ class WalletService {
 
       const address = accounts[0];
       
+      // If we don't have a provider but MetaMask is connected, restore the connection
+      if (!this.provider) {
+        this.provider = new ethers.BrowserProvider(window.ethereum!);
+        this.signer = await this.provider.getSigner();
+      }
+      
       if (this.provider) {
         const network = await this.provider.getNetwork();
         return {
@@ -107,6 +144,23 @@ class WalletService {
   // Get signer
   getSigner(): ethers.JsonRpcSigner | null {
     return this.signer;
+  }
+
+  // Ensure wallet is connected and ready
+  async ensureConnected(): Promise<boolean> {
+    if (!this.isMetaMaskInstalled()) {
+      throw new Error('MetaMask is not installed');
+    }
+
+    // Try to restore connection first
+    const restored = await this.restoreConnection();
+    if (restored) {
+      return true;
+    }
+
+    // Check if already connected
+    const walletInfo = await this.getWalletInfo();
+    return walletInfo?.isConnected || false;
   }
 
   // Listen for account changes

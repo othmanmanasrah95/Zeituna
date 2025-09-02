@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
+import { WalletProvider } from './contexts/WalletContext';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -24,7 +25,8 @@ function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <Router>
+        <WalletProvider>
+          <Router>
           <div className="min-h-screen bg-gray-50 flex flex-col">
             <Header />
             <main className="flex-1">
@@ -61,7 +63,8 @@ function App() {
             </main>
             <Footer />
           </div>
-        </Router>
+          </Router>
+        </WalletProvider>
       </CartProvider>
     </AuthProvider>
   );

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Coins, RefreshCw, ExternalLink } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Coins, RefreshCw } from 'lucide-react';
 import tutTokenService, { TokenBalance as TokenBalanceData } from '../services/tutTokenService';
-import walletService from '../services/walletService';
+import { useWallet } from '../contexts/WalletContext';
 
 interface TokenBalanceProps {
   address?: string;
@@ -14,13 +14,14 @@ export default function TokenBalance({
   showRefresh = true, 
   className = '' 
 }: TokenBalanceProps) {
+  const { isConnected } = useWallet();
   const [balance, setBalance] = useState<TokenBalanceData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
-  const fetchBalance = async () => {
-    if (!walletService.isMetaMaskInstalled()) {
-      setError('MetaMask not installed');
+  const fetchBalance = async (retryCount = 0) => {
+    if (!isConnected) {
+      setError('Wallet not connected');
       return;
     }
 
@@ -37,6 +38,14 @@ export default function TokenBalance({
       setBalance(balanceData);
     } catch (err: any) {
       console.error('Error fetching token balance:', err);
+      
+      // Retry once if it's a connection issue
+      if (retryCount === 0 && err.message?.includes('Wallet not connected')) {
+        console.log('Retrying token balance fetch...');
+        setTimeout(() => fetchBalance(1), 1000);
+        return;
+      }
+      
       setError(err.message || 'Failed to fetch balance');
     } finally {
       setLoading(false);
@@ -44,8 +53,13 @@ export default function TokenBalance({
   };
 
   useEffect(() => {
-    fetchBalance();
-  }, [address]);
+    if (isConnected) {
+      fetchBalance();
+    } else {
+      setError('Wallet not connected');
+      setBalance(null);
+    }
+  }, [address, isConnected]);
 
   const handleRefresh = () => {
     fetchBalance();
