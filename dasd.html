@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Certificate of Tree Adoption • Zeituna</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@400;600&family=Great+Vibes&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand:#2f6b2f;       /* Zeituna green */
+    --ink:#2b2b2b;         /* body text */
+    --gold:#b9935a;        /* accent lines */
+    --bg:#fcf8f3;          /* warm paper */
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:#e9e6df; display:flex; align-items:center; justify-content:center;
+    font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color:var(--ink);
+  }
+  .page{
+    width: 210mm; height: 297mm; background:linear-gradient(180deg, #fff, var(--bg));
+    padding: 24mm; position:relative; box-shadow:0 20px 60px rgba(0,0,0,.12);
+    border: 1.6mm solid var(--brand); border-radius: 6mm;
+  }
+  /* corner accents */
+  .corner{position:absolute; width:38mm; height:38mm; border:2mm solid var(--gold); opacity:.25}
+  .corner.tl{top:10mm; left:10mm; border-right:none; border-bottom:none; border-top-left-radius:6mm}
+  .corner.br{bottom:10mm; right:10mm; border-left:none; border-top:none; border-bottom-right-radius:6mm}
+
+  header{
+    display:flex; align-items:center; justify-content:space-between; gap:12mm;
+    margin-bottom: 10mm;
+  }
+  .brand{
+    display:flex; align-items:center; gap:8mm;
+  }
+  .logo{
+    width:22mm; height:22mm; border-radius:50%; background:var(--brand);
+    display:grid; place-items:center; color:#fff; font-weight:700; font-size:10pt;
+  }
+  .heading h1{
+    margin:0; font-family:"Playfair Display", serif; font-size:28pt; letter-spacing:.3pt;
+  }
+  .heading .subtitle{
+    margin-top:2mm; color:#555; font-weight:600; letter-spacing:2px; font-size:9pt;
+  }
+
+  main{ margin-top: 8mm; text-align:center }
+  .script{
+    font-family:"Great Vibes", cursive; font-size:34pt; color:var(--brand);
+  }
+  .line{
+    width:min(120mm, 70%); height:1px; background:var(--gold); margin:4mm auto 0;
+  }
+  .body{
+    margin: 10mm auto 0; width:min(150mm, 90%); line-height:1.6; font-size:11.5pt;
+  }
+  .grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:8mm; margin:12mm auto 0; width:min(160mm, 92%);
+    font-size:10.5pt;
+  }
+  .cell{padding:6mm; border:1px solid #ddd; border-radius:4mm; background:#fff}
+  .cell strong{display:block; font-size:9pt; color:#666; letter-spacing:.4px; margin-bottom:2mm}
+
+  .signatures{
+    display:grid; grid-template-columns:1fr 1fr; gap:18mm; width:min(180mm, 95%);
+    margin:18mm auto 0; text-align:center;
+  }
+  .sig-line{border-top:1px solid var(--ink); margin-top:16mm; padding-top:3mm}
+  .sig-role{font-size:9pt; color:#555}
+
+  .footer{
+    display:flex; align-items:center; justify-content:space-between; gap:8mm;
+    width:min(180mm, 95%); margin:18mm auto 0; font-size:9pt; color:#555;
+  }
+  .qr{width:28mm; height:28mm; border:1px dashed #bbb; border-radius:2mm; display:grid; place-items:center; font-size:8pt; color:#777}
+  .id{font-monospace: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:9.5pt}
+
+  @media print{
+    body{background:#fff; box-shadow:none}
+    .page{box-shadow:none; margin:0; border-color:#1f5a1f}
+  }
+</style>
+</head>
+<body>
+
+<div class="page"
+     data-certificate-id="ZYT-2025-000123"
+     data-token-id="1024"
+     data-verify-url="https://zeituna.example/verify?tokenId=1024">
+  <div class="corner tl"></div>
+  <div class="corner br"></div>
+
+  <header>
+    <div class="brand">
+      <!-- Replace this with your SVG/PNG logo -->
+      <div class="logo">ZT</div>
+      <div class="heading">
+        <h1>Certificate of Tree Adoption</h1>
+        <div class="subtitle">ZEITUNA • HERITAGE • SUSTAINABILITY</div>
+      </div>
+    </div>
+    <div class="id">
+      ID: <span id="certId">ZYT-2025-000123</span><br/>
+      Token: <span id="tokenId">#1024</span>
+    </div>
+  </header>
+
+  <main>
+    <div>is proudly presented to</div>
+    <div class="script" id="adopterName">Greta Mae</div>
+    <div class="line"></div>
+
+    <div class="body">
+      In recognition of your adoption of an olive tree in the Zeituna groves.
+      Your support nurtures local farmers, preserves heritage, and sustains our land for future generations.
+    </div>
+
+    <div class="grid">
+      <div class="cell"><strong>Tree / Plot</strong><span id="treeLabel">Plot A • Tree 17</span></div>
+      <div class="cell"><strong>Location</strong><span id="location">Deir Ghassaneh, Palestine</span></div>
+      <div class="cell"><strong>Adoption Date</strong><span id="adoptedAt">2025-03-01</span></div>
+      <div class="cell"><strong>Valid Until</strong><span id="validUntil">2026-03-01</span></div>
+    </div>
+
+    <div class="signatures">
+      <div>
+        <div class="sig-line">Daniel Gallego</div>
+        <div class="sig-role">Chief Executive</div>
+      </div>
+      <div>
+        <div class="sig-line">Mariana Napolitani</div>
+        <div class="sig-role">Groves Manager</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>
+        This certificate may be verified online using the QR code or the ID above.
+      </div>
+      <!-- Drop a generated QR image here (png/svg) -->
+      <img class="qr" id="qr" alt="QR Code" src="" />
+    </div>
+  </main>
+</div>
+
+<script>
+  // ---- Simple data binding: change these values from your integration ----
+  const data = {
+    certificateId: document.querySelector(".page").dataset.certificateId,
+    tokenId:       document.querySelector(".page").dataset.tokenId,
+    verifyUrl:     document.querySelector(".page").dataset.verifyUrl,
+    adopterName:   "Greta Mae",
+    treeLabel:     "Plot A • Tree 17",
+    location:      "Deir Ghassaneh, Palestine",
+    adoptedAt:     "2025-03-01",
+    validUntil:    "2026-03-01"
+  };
+
+  // Write to DOM
+  certId.textContent   = data.certificateId;
+  tokenId.textContent  = "#" + data.tokenId;
+  adopterName.textContent = data.adopterName;
+  treeLabel.textContent   = data.treeLabel;
+  location.textContent    = data.location;
+  adoptedAt.textContent   = data.adoptedAt;
+  validUntil.textContent  = data.validUntil;
+
+  // Optional: generate a QR using a public QR endpoint (replace with your own)
+  // For production, use your backend to generate a PNG/SVG and insert its URL.
+  const qrAPI = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(data.verifyUrl);
+  document.getElementById("qr").src = qrAPI;
+</script>
+
+</body>
+</html>

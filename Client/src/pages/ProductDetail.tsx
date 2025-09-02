@@ -1,50 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, Heart, ShoppingCart, Truck, Shield, Leaf, Plus, Minus } from 'lucide-react';
+import { ArrowLeft, Star, Heart, ShoppingCart, Truck, Shield, Leaf, Plus, Minus, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCart } from '../contexts/CartContext';
 
-// Mock product data
-const mockProduct = {
-  id: '1',
-  name: 'Organic Extra Virgin Olive Oil',
-  price: 24.99,
-  originalPrice: 29.99,
-  images: [
-    'https://images.pexels.com/photos/33783/olive-oil-salad-dressing-cooking-olive.jpg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=2',
-    'https://images.pexels.com/photos/1893669/pexels-photo-1893669.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=2',
-    'https://images.pexels.com/photos/159872/olive-oil-food-cooking-oil-159872.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=2'
-  ],
-  rating: 4.8,
-  reviews: 156,
-  category: 'Organic Foods',
-  description: 'Premium cold-pressed extra virgin olive oil sourced from century-old olive groves in the Mediterranean. Our artisanal process preserves the natural flavors and nutritional benefits, delivering a rich, fruity taste with a perfect balance of peppery finish.',
-  features: [
-    'Cold-pressed within 24 hours of harvest',
-    'Certified organic by EU standards',
-    'Single estate sourcing',
-    'Dark glass bottle for UV protection',
-    'Recyclable packaging'
-  ],
-  specifications: {
-    'Volume': '500ml',
-    'Origin': 'Andalusia, Spain',
-    'Harvest Date': 'October 2023',
-    'Acidity Level': '< 0.3%',
-    'Storage': 'Cool, dark place'
-  },
-  inStock: true,
-  stockQuantity: 24,
-  shipping: {
-    free: true,
-    estimatedDays: '3-5 business days'
-  },
-  sustainability: {
-    carbonNeutral: true,
-    locallySourced: true,
-    plasticFree: true
-  }
-};
+
+
+import productService, { Product } from '../services/productService';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -54,13 +16,73 @@ export default function ProductDetail() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const product = mockProduct; // In real app, fetch by id
+  // Fetch product data
+  useEffect(() => {
+    const fetchProduct = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+        console.log('Fetching product with ID:', id);
+        const response = await productService.getProduct(id);
+        console.log('Product response:', response);
+        setProduct(response.data);
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch product';
+        setError(errorMessage);
+        console.error('Error fetching product:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
+
+  // Debug: Log product state
+  useEffect(() => {
+    console.log('Product state updated:', product);
+  }, [product]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-green-600 animate-spin mx-auto mb-4" />
+          <p className="text-xl text-gray-600">Loading product...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error || !product) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-xl text-red-600 mb-4">Error loading product</p>
+          <p className="text-gray-600 mb-4">{error || 'Product not found'}</p>
+          <button 
+            onClick={() => navigate('/marketplace')} 
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Back to Marketplace
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleAddToCart = () => {
     for (let i = 0; i < quantity; i++) {
       addItem({
-        id: product.id,
+        id: product._id,
         name: product.name,
         price: product.price,
         image: product.images[0],
@@ -143,7 +165,7 @@ export default function ProductDetail() {
                   ))}
                 </div>
                 <span className="ml-2 text-sm text-gray-600">
-                  {product.rating} ({product.reviews} reviews)
+                  {product.rating} ({product.reviews.length} reviews)
                 </span>
               </div>
             </div>
@@ -165,45 +187,49 @@ export default function ProductDetail() {
             <p className="text-gray-600 leading-relaxed">{product.description}</p>
 
             {/* Key Features */}
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-3">Key Features:</h3>
-              <ul className="space-y-2">
-                {product.features.map((feature, index) => (
-                  <li key={index} className="flex items-center text-gray-600">
-                    <Leaf className="w-4 h-4 text-green-500 mr-2" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {product.features && product.features.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Key Features:</h3>
+                <ul className="space-y-2">
+                  {product.features.map((feature, index) => (
+                    <li key={index} className="flex items-center text-gray-600">
+                      <Leaf className="w-4 h-4 text-green-500 mr-2" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Sustainability Icons */}
-            <div className="flex space-x-6">
-              {product.sustainability.carbonNeutral && (
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                    <Leaf className="w-6 h-6 text-green-600" />
+            {product.sustainability && (
+              <div className="flex space-x-6">
+                {product.sustainability.carbonNeutral && (
+                  <div className="flex flex-col items-center">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                      <Leaf className="w-6 h-6 text-green-600" />
+                    </div>
+                    <span className="text-xs text-gray-600 mt-1">Carbon Neutral</span>
                   </div>
-                  <span className="text-xs text-gray-600 mt-1">Carbon Neutral</span>
-                </div>
-              )}
-              {product.sustainability.locallySourced && (
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Truck className="w-6 h-6 text-blue-600" />
+                )}
+                {product.sustainability.locallySourced && (
+                  <div className="flex flex-col items-center">
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <Truck className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <span className="text-xs text-gray-600 mt-1">Locally Sourced</span>
                   </div>
-                  <span className="text-xs text-gray-600 mt-1">Locally Sourced</span>
-                </div>
-              )}
-              {product.sustainability.plasticFree && (
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Shield className="w-6 h-6 text-purple-600" />
+                )}
+                {product.sustainability.plasticFree && (
+                  <div className="flex flex-col items-center">
+                    <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                      <Shield className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <span className="text-xs text-gray-600 mt-1">Plastic Free</span>
                   </div>
-                  <span className="text-xs text-gray-600 mt-1">Plastic Free</span>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             {/* Quantity and Add to Cart */}
             <div className="space-y-4">
@@ -219,15 +245,15 @@ export default function ProductDetail() {
                   </button>
                   <span className="px-4 py-2 border-x border-gray-300">{quantity}</span>
                   <button
-                    onClick={() => setQuantity(Math.min(product.stockQuantity, quantity + 1))}
+                    onClick={() => setQuantity(Math.min(product.stockQuantity || 999, quantity + 1))}
                     className="p-2 hover:bg-gray-50"
-                    disabled={quantity >= product.stockQuantity}
+                    disabled={quantity >= (product.stockQuantity || 999)}
                   >
                     <Plus className="w-4 h-4" />
                   </button>
                 </div>
                 <span className="text-sm text-gray-600">
-                  {product.stockQuantity} available
+                  {product.stockQuantity || 'Unlimited'} available
                 </span>
               </div>
 
@@ -246,17 +272,19 @@ export default function ProductDetail() {
             </div>
 
             {/* Shipping Info */}
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center">
-                <Truck className="w-5 h-5 text-green-600 mr-2" />
-                <span className="font-medium text-green-800">
-                  {product.shipping.free ? 'Free shipping' : 'Shipping calculated at checkout'}
-                </span>
+            {product.shipping && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <Truck className="w-5 h-5 text-green-600 mr-2" />
+                  <span className="font-medium text-green-800">
+                    {product.shipping.free ? 'Free shipping' : 'Shipping calculated at checkout'}
+                  </span>
+                </div>
+                <p className="text-sm text-green-700 mt-1">
+                  Estimated delivery: {product.shipping.estimatedDays}
+                </p>
               </div>
-              <p className="text-sm text-green-700 mt-1">
-                Estimated delivery: {product.shipping.estimatedDays}
-              </p>
-            </div>
+            )}
           </div>
         </div>
 
@@ -295,7 +323,7 @@ export default function ProductDetail() {
               </div>
             )}
 
-            {activeTab === 'specifications' && (
+            {activeTab === 'specifications' && product.specifications && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {Object.entries(product.specifications).map(([key, value]) => (
                   <div key={key} className="flex justify-between py-2 border-b border-gray-200">

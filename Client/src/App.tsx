@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
+import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Marketplace from './pages/Marketplace';
 import RootsProgram from './pages/RootsProgram';
@@ -17,6 +18,7 @@ import Cart from './pages/Cart';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ProductDetail from './pages/ProductDetail';
 import TreeDetail from './pages/TreeDetail';
+import LandPlotDetail from './pages/LandPlotDetail';
 
 function App() {
   return (
@@ -29,17 +31,32 @@ function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/marketplace" element={<Marketplace />} />
-                <Route path="/marketplace/product/:id" element={<ProductDetail />} />
+                <Route path="/product/:id" element={<ProductDetail />} />
                 <Route path="/roots" element={<RootsProgram />} />
                 <Route path="/roots/adopt" element={<AdoptTree />} />
                 <Route path="/roots/plant" element={<PlantTree />} />
                 <Route path="/roots/tree/:id" element={<TreeDetail />} />
+                <Route path="/land-plot/:id" element={<LandPlotDetail />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                <Route path="/profile" element={<Profile />} />
+                <Route 
+                  path="/profile" 
+                  element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  } 
+                />
                 <Route path="/wallet/connect" element={<WalletConnect />} />
                 <Route path="/cart" element={<Cart />} />
-                <Route path="/admin/*" element={<AdminDashboard />} />
+                <Route 
+                  path="/admin/*" 
+                  element={
+                    <ProtectedRoute requiredRole="admin">
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
               </Routes>
             </main>
             <Footer />

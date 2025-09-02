@@ -1,99 +1,15 @@
-import React, { useState, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Filter, Grid, List, Star, Heart, ShoppingCart } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Filter, Grid, List, Star, Heart, ShoppingCart, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCart } from '../contexts/CartContext';
+import productService, { Product } from '../services/productService';
 
-interface Product {
+interface DisplayProduct extends Omit<Product, 'reviews' | '_id' | 'images'> {
   id: string;
-  name: string;
-  price: number;
-  originalPrice?: number;
   image: string;
-  rating: number;
   reviews: number;
-  category: string;
-  description: string;
-  inStock: boolean;
-  featured: boolean;
 }
-
-const mockProducts: Product[] = [
-  {
-    id: '1',
-    name: 'Organic Extra Virgin Olive Oil',
-    price: 24.99,
-    originalPrice: 29.99,
-    image: 'https://images.pexels.com/photos/33783/olive-oil-salad-dressing-cooking-olive.jpg?auto=compress&cs=tinysrgb&w=400&h=300&dpr=2',
-    rating: 4.8,
-    reviews: 156,
-    category: 'organic',
-    description: 'Premium cold-pressed olive oil from local organic farms',
-    inStock: true,
-    featured: true
-  },
-  {
-    id: '2',
-    name: 'Handwoven Natural Fiber Basket',
-    price: 45.00,
-    image: 'https://images.pexels.com/photos/4465831/pexels-photo-4465831.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&dpr=2',
-    rating: 4.9,
-    reviews: 89,
-    category: 'handmade',
-    description: 'Beautiful handcrafted basket made from sustainable materials',
-    inStock: true,
-    featured: true
-  },
-  {
-    id: '3',
-    name: 'Eco-Friendly Soap Gift Set',
-    price: 18.50,
-    originalPrice: 22.00,
-    image: 'https://images.pexels.com/photos/4465124/pexels-photo-4465124.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&dpr=2',
-    rating: 4.7,
-    reviews: 203,
-    category: 'eco-friendly',
-    description: 'Natural soap set with essential oils and organic ingredients',
-    inStock: true,
-    featured: false
-  },
-  {
-    id: '4',
-    name: 'Bamboo Kitchen Utensil Set',
-    price: 32.99,
-    image: 'https://images.pexels.com/photos/4439444/pexels-photo-4439444.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&dpr=2',
-    rating: 4.6,
-    reviews: 127,
-    category: 'eco-friendly',
-    description: 'Complete bamboo kitchen utensil set for sustainable cooking',
-    inStock: true,
-    featured: false
-  },
-  {
-    id: '5',
-    name: 'Local Honey Collection',
-    price: 28.00,
-    image: 'https://images.pexels.com/photos/1463039/pexels-photo-1463039.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&dpr=2',
-    rating: 4.9,
-    reviews: 94,
-    category: 'local',
-    description: 'Pure raw honey from local beekeepers supporting biodiversity',
-    inStock: false,
-    featured: true
-  },
-  {
-    id: '6',
-    name: 'Ceramic Plant Pot Set',
-    price: 39.99,
-    image: 'https://images.pexels.com/photos/4503821/pexels-photo-4503821.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&dpr=2',
-    rating: 4.5,
-    reviews: 71,
-    category: 'handmade',
-    description: 'Handcrafted ceramic pots perfect for your indoor garden',
-    inStock: true,
-    featured: false
-  }
-];
 
 const sortOptions = [
   { id: 'featured', name: 'Featured' },
@@ -105,21 +21,54 @@ const sortOptions = [
 
 export default function Marketplace() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { addItem } = useCart();
   
   const [sortBy, setSortBy] = useState('featured');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [productType, setProductType] = useState<'olive' | 'handcrafts'>('olive');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [products, setProducts] = useState<DisplayProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const searchQuery = searchParams.get('search') || '';
 
-  const filteredAndSortedProducts = useMemo(() => {
-    let filtered = mockProducts.filter(product => {
-      // Product type filter
-      if (productType === 'olive' && !product.name.toLowerCase().includes('olive oil')) {
-        return false;
+  // Fetch products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await productService.getProducts();
+        
+        // Transform API data to match display format
+        const transformedProducts: DisplayProduct[] = response.data.map(product => ({
+          ...product,
+          id: product._id,
+          image: product.images[0] || '/treewihte1.png', // Default image if none provided
+          reviews: product.reviews.length,
+          originalPrice: undefined // Add if you want to support original prices
+        }));
+        
+        console.log('Products loaded:', transformedProducts.length);
+        console.log('Available categories:', Array.from(new Set(transformedProducts.map(p => p.category))));
+        
+        setProducts(transformedProducts);
+      } catch (err: any) {
+        setError(err.response?.data?.error || 'Failed to fetch products');
+        console.error('Error fetching products:', err);
+      } finally {
+        setLoading(false);
       }
-      if (productType === 'handcrafts' && product.name.toLowerCase().includes('olive oil')) {
+    };
+
+    fetchProducts();
+  }, []);
+
+  const filteredAndSortedProducts = useMemo(() => {
+    let filtered = products.filter(product => {
+      // Category filter
+      if (selectedCategory !== 'all' && product.category !== selectedCategory) {
         return false;
       }
       // Search filter
@@ -148,7 +97,7 @@ export default function Marketplace() {
     }
 
     return filtered;
-  }, [searchQuery, sortBy, productType]);
+  }, [products, searchQuery, sortBy, selectedCategory]);
 
   const handleAddToCart = (product: Product) => {
     addItem({
@@ -159,6 +108,40 @@ export default function Marketplace() {
       type: 'product'
     });
   };
+
+  const handleProductClick = (productId: string) => {
+    navigate(`/product/${productId}`);
+  };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-green-600 animate-spin mx-auto mb-4" />
+          <p className="text-xl text-gray-600">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-xl text-red-600 mb-4">Error loading products</p>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-white">
@@ -207,17 +190,22 @@ export default function Marketplace() {
               </div>
               <div className="inline-flex bg-green-100 rounded-full p-1 shadow-md mr-4">
                 <button
-                  className={`px-6 py-2 rounded-full font-semibold text-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-400 ${productType === 'olive' ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white shadow' : 'bg-transparent text-green-900 hover:bg-green-200'}`}
-                  onClick={() => setProductType('olive')}
+                  className={`px-6 py-2 rounded-full font-semibold text-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-400 ${selectedCategory === 'all' ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white shadow' : 'bg-transparent text-green-900 hover:bg-green-200'}`}
+                  onClick={() => setSelectedCategory('all')}
                 >
-                  Olive Oil
+                  All
                 </button>
-                <button
-                  className={`px-6 py-2 rounded-full font-semibold text-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-400 ${productType === 'handcrafts' ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white shadow' : 'bg-transparent text-green-900 hover:bg-green-200'}`}
-                  onClick={() => setProductType('handcrafts')}
-                >
-                  Hand Crafts
-                </button>
+                {Array.from(new Set(products.map(p => p.category))).map(category => (
+                  <button
+                    key={category}
+                    className={`px-6 py-2 rounded-full font-semibold text-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-400 ${selectedCategory === category ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white shadow' : 'bg-transparent text-green-900 hover:bg-green-200'}`}
+                    onClick={() => setSelectedCategory(category)}
+                  >
+                    {category === 'olive_oil' ? 'Olive Oil' : 
+                     category === 'eco-friendly' ? 'Eco-Friendly' : 
+                     category.charAt(0).toUpperCase() + category.slice(1).replace('-', ' ')}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -226,7 +214,8 @@ export default function Marketplace() {
         {/* Results Count */}
         <div className="mb-6">
           <p className="text-gray-600">
-            Showing {filteredAndSortedProducts.length} of {mockProducts.length} products
+            Showing {filteredAndSortedProducts.length} of {products.length} products
+            {selectedCategory !== 'all' && ` in ${selectedCategory} category`}
           </p>
         </div>
 
@@ -242,9 +231,10 @@ export default function Marketplace() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`backdrop-blur-lg bg-white/70 border border-green-100 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden group ${
+              className={`backdrop-blur-lg bg-white/70 border border-green-100 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer ${
                 viewMode === 'list' ? 'flex' : ''
               }`}
+              onClick={() => handleProductClick(product.id)}
             >
               <div className={`relative ${viewMode === 'list' ? 'w-48 flex-shrink-0' : ''}`}>
                 <img

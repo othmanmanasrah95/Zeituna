@@ -59,6 +59,7 @@ app.use('/api/users', userRoutes);
 // app.use('/api/vendors', vendorRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/trees', treeRoutes);
+app.use('/api/land-plots', require('./routes/landPlotRoutes'));
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/admin', adminRoutes);
 
