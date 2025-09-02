@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Send, Gift, Coins, AlertCircle, CheckCircle2, Copy, Tag } from 'lucide-react';
 import tutTokenService, { REASON_CODES, RewardData } from '../services/tutTokenService';
-import walletService from '../services/walletService';
+import { useWallet } from '../contexts/WalletContext';
 import discountService, { DiscountCode } from '../services/discountService';
 
 interface TokenOperationsProps {
@@ -9,6 +9,7 @@ interface TokenOperationsProps {
 }
 
 export default function TokenOperations({ className = '' }: TokenOperationsProps) {
+  const { isConnected } = useWallet();
   const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
@@ -24,25 +25,38 @@ export default function TokenOperations({ className = '' }: TokenOperationsProps
   const [batchRewards, setBatchRewards] = useState<RewardData[]>([]);
 
   useEffect(() => {
-    checkOwnerStatus();
+    if (isConnected) {
+      checkOwnerStatus();
+    }
     loadUserDiscounts();
-  }, []);
+  }, [isConnected]);
 
-  const checkOwnerStatus = async () => {
+  const checkOwnerStatus = async (retryCount = 0) => {
+    if (!isConnected) {
+      return;
+    }
+
     try {
       if (!tutTokenService.isInitialized()) {
         await tutTokenService.initialize();
       }
       
-      const signer = walletService.getSigner();
+      const signer = tutTokenService.getContract().signer;
       if (!signer) return;
 
       const userAddress = await signer.getAddress();
       const ownerAddress = await tutTokenService.getOwner();
       
       setIsOwner(userAddress.toLowerCase() === ownerAddress.toLowerCase());
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error checking owner status:', err);
+      
+      // Retry once if it's a connection issue
+      if (retryCount === 0 && err.message?.includes('Wallet not connected')) {
+        console.log('Retrying owner status check...');
+        setTimeout(() => checkOwnerStatus(1), 1000);
+        return;
+      }
     }
   };
 

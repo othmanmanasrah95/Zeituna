@@ -23,7 +23,14 @@ export default function Profile() {
 
   useEffect(() => {
     if (!loading) {
-      walletService.isMetaMaskConnected().then(setIsWalletConnected).catch(() => setIsWalletConnected(false));
+      // Restore wallet connection if MetaMask is already connected
+      walletService.restoreConnection().then((restored) => {
+        if (restored) {
+          setIsWalletConnected(true);
+        } else {
+          walletService.isMetaMaskConnected().then(setIsWalletConnected).catch(() => setIsWalletConnected(false));
+        }
+      }).catch(() => setIsWalletConnected(false));
     }
   }, [loading]);
 
