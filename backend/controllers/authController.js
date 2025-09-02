@@ -229,6 +229,26 @@ exports.connectWallet = async (req, res) => {
   }
 };
 
+// @route   POST /api/auth/disconnect-wallet
+// @access  Private
+exports.disconnectWallet = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+    
+    // Clear wallet information
+    user.walletAddress = undefined;
+    user.walletConnected = false;
+    await user.save();
+    
+    res.json({ success: true, message: 'Wallet disconnected successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 // @desc    Logout user (JWT-based, stateless)
 // @route   GET /api/auth/logout
 // @access  Public
