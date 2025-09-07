@@ -1,11 +1,23 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Leaf, TreePine } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Cart() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const { items, removeItem, updateQuantity, clearCart, total, itemCount } = useCart();
+
+  const handleProceedToCheckout = () => {
+    if (!user) {
+      // Redirect to login if user is not authenticated
+      navigate('/login');
+      return;
+    }
+    navigate('/checkout');
+  };
 
   if (items.length === 0) {
     return (
@@ -173,7 +185,10 @@ export default function Cart() {
                 </div>
               </div>
 
-              <button className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium mb-4">
+              <button 
+                onClick={handleProceedToCheckout}
+                className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium mb-4"
+              >
                 Proceed to Checkout
               </button>
 

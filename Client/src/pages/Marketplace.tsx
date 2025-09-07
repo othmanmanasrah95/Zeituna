@@ -1,342 +1,216 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Filter, Grid, List, Star, Heart, ShoppingCart, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Clock, ShoppingBag, Users, Leaf, Star, ArrowRight, Mail, Bell } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useCart } from '../contexts/CartContext';
-import productService, { Product } from '../services/productService';
-
-interface DisplayProduct extends Omit<Product, 'reviews' | '_id' | 'images'> {
-  id: string;
-  image: string;
-  reviews: number;
-}
-
-const sortOptions = [
-  { id: 'featured', name: 'Featured' },
-  { id: 'price-low', name: 'Price: Low to High' },
-  { id: 'price-high', name: 'Price: High to Low' },
-  { id: 'rating', name: 'Highest Rated' },
-  { id: 'newest', name: 'Newest' }
-];
 
 export default function Marketplace() {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const { addItem } = useCart();
-  
-  const [sortBy, setSortBy] = useState('featured');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [products, setProducts] = useState<DisplayProduct[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const [isSubscribed, setIsSubscribed] = useState(false);
 
-  const searchQuery = searchParams.get('search') || '';
-
-  // Fetch products from API
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await productService.getProducts();
-        
-        // Transform API data to match display format
-        const transformedProducts: DisplayProduct[] = response.data.map(product => ({
-          ...product,
-          id: product._id,
-          image: product.images[0] || '/treewihte1.png', // Default image if none provided
-          reviews: product.reviews.length,
-          originalPrice: undefined // Add if you want to support original prices
-        }));
-        
-        console.log('Products loaded:', transformedProducts.length);
-        console.log('Available categories:', Array.from(new Set(transformedProducts.map(p => p.category))));
-        
-        setProducts(transformedProducts);
-      } catch (err: any) {
-        setError(err.response?.data?.error || 'Failed to fetch products');
-        console.error('Error fetching products:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, []);
-
-  const filteredAndSortedProducts = useMemo(() => {
-    let filtered = products.filter(product => {
-      // Category filter
-      if (selectedCategory !== 'all' && product.category !== selectedCategory) {
-        return false;
-      }
-      // Search filter
-      if (searchQuery && !product.name.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false;
-      }
-      return true;
-    });
-
-    // Sort products
-    switch (sortBy) {
-      case 'price-low':
-        filtered.sort((a, b) => a.price - b.price);
-        break;
-      case 'price-high':
-        filtered.sort((a, b) => b.price - a.price);
-        break;
-      case 'rating':
-        filtered.sort((a, b) => b.rating - a.rating);
-        break;
-      case 'featured':
-        filtered.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
-        break;
-      default:
-        break;
+  const handleNotifyMe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email) {
+      // Here you would typically send the email to your backend
+      console.log('Email submitted:', email);
+      setIsSubscribed(true);
+      setEmail('');
+      setTimeout(() => setIsSubscribed(false), 3000);
     }
-
-    return filtered;
-  }, [products, searchQuery, sortBy, selectedCategory]);
-
-  const handleAddToCart = (product: Product) => {
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      type: 'product'
-    });
   };
 
-  const handleProductClick = (productId: string) => {
-    navigate(`/product/${productId}`);
-  };
+  const features = [
+    {
+      icon: ShoppingBag,
+      title: 'Local Artisans',
+      description: 'Discover unique products from talented local craftspeople and artisans in Palestine and the region.'
+    },
+    {
+      icon: Leaf,
+      title: 'Eco-Friendly',
+      description: 'Every product is carefully vetted for sustainability and environmental impact.'
+    },
+    {
+      icon: Users,
+      title: 'Community Impact',
+      description: 'Support local communities with every purchase, creating meaningful economic opportunities.'
+    },
+    {
+      icon: Star,
+      title: 'Quality Assured',
+      description: 'All products meet our high standards for quality, authenticity, and ethical production.'
+    }
+  ];
 
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-white flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-green-600 animate-spin mx-auto mb-4" />
-          <p className="text-xl text-gray-600">Loading products...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show error state
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-white flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-xl text-red-600 mb-4">Error loading products</p>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const upcomingCategories = [
+    'Traditional Olive Oil & Products',
+    'Handcrafted Pottery & Ceramics',
+    'Natural Skincare & Cosmetics',
+    'Sustainable Fashion & Textiles',
+    'Organic Food & Beverages',
+    'Artisan Jewelry & Accessories',
+    'Home Decor & Furnishings',
+    'Books & Cultural Items'
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Header with Glow */}
-        <div className="relative mb-12 flex flex-col items-center text-center">
+        {/* Coming Soon Header */}
+        <div className="relative mb-16 flex flex-col items-center text-center">
           <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-72 h-72 bg-green-300 opacity-20 rounded-full blur-3xl animate-pulse z-0" />
-          <h1 className="relative z-10 text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 drop-shadow-lg tracking-tight">
-            {searchQuery ? `Search results for "${searchQuery}"` : 'Marketplace'}
-          </h1>
-          <p className="relative z-10 text-xl text-green-900 max-w-2xl mx-auto font-medium mb-2">
-            Discover sustainable, premium products from local artisans and eco-friendly brands.
-          </p>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="relative z-10"
+          >
+            <div className="inline-flex items-center bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
+              <Clock className="w-4 h-4 mr-2" />
+              Coming Soon
+            </div>
+            
+            <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 drop-shadow-lg tracking-tight">
+              Sustainable Marketplace
+            </h1>
+            
+            <p className="text-xl md:text-2xl text-green-900 max-w-3xl mx-auto font-medium mb-8 leading-relaxed">
+              Discover authentic products from local artisans, support sustainable practices, 
+              and make a positive impact with every purchase.
+            </p>
+
+            {/* Notify Me Form */}
+            <div className="max-w-md mx-auto">
+              {isSubscribed ? (
+                <div className="bg-green-100 border border-green-200 rounded-lg p-4 text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <Bell className="w-5 h-5 text-green-600 mr-2" />
+                    <span className="text-green-800 font-medium">You're on the list!</span>
+                  </div>
+                  <p className="text-green-700 text-sm">We'll notify you when the marketplace launches.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleNotifyMe} className="flex gap-2">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    required
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                  <button
+                    type="submit"
+                    className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+                  >
+                    <Mail className="w-4 h-4" />
+                    <span>Notify Me</span>
+                  </button>
+                </form>
+              )}
+            </div>
+          </motion.div>
         </div>
 
-        {/* Filters and Controls */}
-        <div className="flex justify-center mb-12">
-          <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-green-100 p-4 inline-flex items-center space-x-4">
-            {/* Controls */}
-            <div className="flex items-center space-x-4">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              >
-                {sortOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.name}
-                  </option>
-                ))}
-              </select>
+        {/* Features Section */}
+        <div className="mb-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              What Makes Us Different
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Our marketplace is built on principles of sustainability, community impact, and authentic craftsmanship.
+            </p>
+          </motion.div>
 
-              <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 ${viewMode === 'grid' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                >
-                  <Grid className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 ${viewMode === 'list' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                >
-                  <List className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="inline-flex bg-green-100 rounded-full p-1 shadow-md mr-4">
-                <button
-                  className={`px-6 py-2 rounded-full font-semibold text-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-400 ${selectedCategory === 'all' ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white shadow' : 'bg-transparent text-green-900 hover:bg-green-200'}`}
-                  onClick={() => setSelectedCategory('all')}
-                >
-                  All
-                </button>
-                {Array.from(new Set(products.map(p => p.category))).map(category => (
-                  <button
-                    key={category}
-                    className={`px-6 py-2 rounded-full font-semibold text-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-400 ${selectedCategory === category ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white shadow' : 'bg-transparent text-green-900 hover:bg-green-200'}`}
-                    onClick={() => setSelectedCategory(category)}
-                  >
-                    {category === 'olive_oil' ? 'Olive Oil' : 
-                     category === 'eco-friendly' ? 'Eco-Friendly' : 
-                     category.charAt(0).toUpperCase() + category.slice(1).replace('-', ' ')}
-                  </button>
-                ))}
-              </div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {features.map((feature, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.3 + index * 0.1 }}
+                className="bg-white/70 backdrop-blur-lg border border-green-100 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                  <feature.icon className="w-6 h-6 text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">{feature.title}</h3>
+                <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
 
-        {/* Results Count */}
-        <div className="mb-6">
-          <p className="text-gray-600">
-            Showing {filteredAndSortedProducts.length} of {products.length} products
-            {selectedCategory !== 'all' && ` in ${selectedCategory} category`}
-          </p>
-        </div>
-
-        {/* Products Grid/List */}
-        <div className={`grid gap-8 ${
-          viewMode === 'grid' 
-            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
-            : 'grid-cols-1'
-        }`}>
-          {filteredAndSortedProducts.map((product, index) => (
-            <motion.div
-              key={product.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`backdrop-blur-lg bg-white/70 border border-green-100 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer ${
-                viewMode === 'list' ? 'flex' : ''
-              }`}
-              onClick={() => handleProductClick(product.id)}
-            >
-              <div className={`relative ${viewMode === 'list' ? 'w-48 flex-shrink-0' : ''}`}>
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className={`w-full object-cover group-hover:scale-105 transition-transform duration-300 ${
-                    viewMode === 'list' ? 'h-full' : 'h-48'
-                  }`}
-                />
-                {product.featured && (
-                  <div className="absolute top-2 left-2 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-medium shadow">
-                    Featured
-                  </div>
-                )}
-                {product.originalPrice && (
-                  <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium shadow">
-                    Sale
-                  </div>
-                )}
-                {!product.inStock && (
-                  <div className="absolute inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center">
-                    <span className="text-white font-semibold text-lg">Out of Stock</span>
-                  </div>
-                )}
-                <button className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <Heart className="w-4 h-4 text-gray-600 hover:text-red-500" />
-                </button>
-              </div>
-
-              <div className="p-6 flex-1">
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="text-lg font-bold text-gray-900 group-hover:text-green-700 transition-colors">
-                    {product.name}
-                  </h3>
-                </div>
-                <p className="text-green-900 text-base mb-3 line-clamp-2">
-                  {product.description}
-                </p>
-                <div className="flex items-center mb-3">
-                  <div className="flex items-center">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-4 h-4 ${
-                          i < Math.floor(product.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <span className="ml-2 text-sm text-gray-600">
-                    {product.rating} ({product.reviews} reviews)
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-2xl font-extrabold text-green-700">
-                      ${product.price}
-                    </span>
-                    {product.originalPrice && (
-                      <span className="text-sm text-gray-500 line-through">
-                        ${product.originalPrice}
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleAddToCart(product)}
-                    disabled={!product.inStock}
-                    className={`flex items-center px-5 py-2 rounded-lg font-semibold text-lg transition-all duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-green-400 ${
-                      product.inStock
-                        ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white hover:from-green-700 hover:to-blue-700 hover:scale-105'
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    <ShoppingCart className="w-5 h-5 mr-2" />
-                    {viewMode === 'list' ? 'Add to Cart' : ''}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Empty State */}
-        {filteredAndSortedProducts.length === 0 && (
-          <div className="text-center py-12">
-            <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Filter className="w-8 h-8 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-            <p className="text-gray-600 mb-4">
-              Try adjusting your filters or search terms
+        {/* Upcoming Categories */}
+        <div className="mb-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              What You Can Expect
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              We're curating an amazing collection of products from talented artisans and sustainable brands.
             </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {upcomingCategories.map((category, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.7 + index * 0.05 }}
+                className="bg-white/50 backdrop-blur-sm border border-green-100 rounded-lg p-4 hover:bg-white/70 transition-all duration-300"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-gray-700 font-medium">{category}</span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Call to Action */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.8 }}
+          className="bg-gradient-to-r from-green-600 to-blue-600 rounded-2xl p-8 md:p-12 text-center text-white"
+        >
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            Ready to Make a Difference?
+          </h2>
+          <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+            Join our community of conscious consumers and be the first to know when we launch. 
+            Together, we can create a more sustainable future.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => {
-                setSortBy('featured');
-              }}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              onClick={() => window.location.href = '/roots'}
+              className="bg-white text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors flex items-center justify-center space-x-2"
             >
-              Clear Filters
+              <Leaf className="w-5 h-5" />
+              <span>Explore Tree Adoption</span>
+            </button>
+            <button
+              onClick={() => window.location.href = '/contact'}
+              className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-green-600 transition-colors flex items-center justify-center space-x-2"
+            >
+              <ArrowRight className="w-5 h-5" />
+              <span>Get in Touch</span>
             </button>
           </div>
-        )}
+        </motion.div>
       </div>
     </div>
   );

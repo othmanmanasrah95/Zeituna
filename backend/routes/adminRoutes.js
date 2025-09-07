@@ -19,8 +19,6 @@ const {
   createLandPlot,
   updateLandPlot,
   deleteLandPlot,
-  getTransactions,
-  updateTransaction,
   getTokenBalances
 } = require('../controllers/adminController');
 
@@ -54,10 +52,6 @@ router.get('/land-plots', getLandPlots);
 router.post('/land-plots', createLandPlot);
 router.put('/land-plots/:id', updateLandPlot);
 router.delete('/land-plots/:id', deleteLandPlot);
-
-// Transaction management routes
-router.get('/transactions', getTransactions);
-router.put('/transactions/:id', updateTransaction);
 
 // Token balance management routes
 router.get('/token-balances', getTokenBalances);

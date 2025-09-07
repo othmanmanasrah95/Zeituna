@@ -25,15 +25,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
   const addItem = (newItem: Omit<CartItem, 'quantity'>) => {
+    console.log('CartContext: addItem called with:', newItem);
     setItems(current => {
+      console.log('CartContext: Current items:', current);
       const existing = current.find(item => item.id === newItem.id);
       if (existing) {
+        console.log('CartContext: Item exists, updating quantity');
         return current.map(item =>
           item.id === newItem.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
+      console.log('CartContext: New item, adding to cart');
       return [...current, { ...newItem, quantity: 1 }];
     });
   };

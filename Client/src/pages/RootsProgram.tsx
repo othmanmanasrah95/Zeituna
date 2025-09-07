@@ -34,8 +34,8 @@ export default function RootsProgram() {
   const adoptionBenefits = [
     'Digital NFT Certificate of Adoption (valid for 1 year)',
     'Personal name added to the tree\'s history log',
-    '$33 worth of TUT tokens credited to your wallet',
-    '$33 paid directly to the vendor/farmer',
+    '22 TUT tokens redeemable for 750ml olive oil',
+    'Some of the money paid directly to the farmers',
     'Tree marked as "adopted" for 12 months',
     'Renewal reminders before expiration',
     'Access to exclusive adopter community'
