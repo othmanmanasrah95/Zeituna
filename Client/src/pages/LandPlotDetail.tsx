@@ -313,7 +313,7 @@ export default function LandPlotDetail() {
                 <div className="text-center mb-6">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Adopt a Tree</h3>
                   <div className="text-3xl font-bold text-green-600 mb-2">
-                    ${landPlot.adoptionPrice}
+                    99JOD
                     <span className="text-lg text-gray-500 font-normal">/year</span>
                   </div>
                   <p className="text-gray-600">One-time payment for full year</p>
@@ -355,11 +355,11 @@ export default function LandPlotDetail() {
                   <div className="space-y-2">
                     <div className="flex items-center text-sm">
                       <Award className="w-4 h-4 text-green-600 mr-2" />
-                      <span className="text-gray-700">Digital NFT Certificate (1 year)</span>
+                      <span className="text-gray-700">Digital Certificate (1 year)</span>
                     </div>
                     <div className="flex items-center text-sm">
                       <Coins className="w-4 h-4 text-green-600 mr-2" />
-                      <span className="text-gray-700">$33 worth of TUT tokens</span>
+                      <span className="text-gray-700">22 TUT tokens for olive oil</span>
                     </div>
                     <div className="flex items-center text-sm">
                       <TreePine className="w-4 h-4 text-green-600 mr-2" />

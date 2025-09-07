@@ -16,10 +16,16 @@ import Register from './pages/auth/Register';
 import Profile from './pages/Profile';
 import WalletConnect from './pages/WalletConnect';
 import Cart from './pages/Cart';
+import Checkout from './pages/Checkout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ProductDetail from './pages/ProductDetail';
 import TreeDetail from './pages/TreeDetail';
 import LandPlotDetail from './pages/LandPlotDetail';
+import Contact from './pages/Contact';
+import AboutUs from './pages/AboutUs';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import CookiePolicy from './pages/CookiePolicy';
 
 function App() {
   return (
@@ -52,6 +58,14 @@ function App() {
                 <Route path="/wallet/connect" element={<WalletConnect />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route 
+                  path="/checkout" 
+                  element={
+                    <ProtectedRoute>
+                      <Checkout />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
                   path="/admin/*" 
                   element={
                     <ProtectedRoute requiredRole="admin">
@@ -59,6 +73,11 @@ function App() {
                     </ProtectedRoute>
                   } 
                 />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/about" element={<AboutUs />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/terms" element={<TermsOfService />} />
+                <Route path="/cookies" element={<CookiePolicy />} />
               </Routes>
             </main>
             <Footer />

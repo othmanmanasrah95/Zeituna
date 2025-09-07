@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { Leaf, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Youtube } from 'lucide-react';
 
@@ -67,53 +66,21 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Categories */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Categories</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/marketplace?category=organic" className="text-gray-400 hover:text-green-400 transition-colors">
-                  Organic Products
-                </Link>
-              </li>
-              <li>
-                <Link to="/marketplace?category=handmade" className="text-gray-400 hover:text-green-400 transition-colors">
-                  Handmade Crafts
-                </Link>
-              </li>
-              <li>
-                <Link to="/marketplace?category=eco-friendly" className="text-gray-400 hover:text-green-400 transition-colors">
-                  Eco-Friendly
-                </Link>
-              </li>
-              <li>
-                <Link to="/marketplace?category=local" className="text-gray-400 hover:text-green-400 transition-colors">
-                  Local Products
-                </Link>
-              </li>
-              <li>
-                <Link to="/roots/adopt" className="text-gray-400 hover:text-green-400 transition-colors">
-                  Adopt a Tree
-                </Link>
-              </li>
-            </ul>
-          </div>
-
           {/* Contact Info */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Contact Us</h3>
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 text-green-400" />
-                <span className="text-gray-400">info@zeituna.com</span>
+                <span className="text-gray-400">hello@tourath.com</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="w-5 h-5 text-green-400" />
-                <span className="text-gray-400">+1 (555) 123-4567</span>
+                <span className="text-gray-400">+970 (56) 807-6985</span>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="w-5 h-5 text-green-400" />
-                <span className="text-gray-400">123 Green Street, Eco City, EC 12345</span>
+                <span className="text-gray-400">Deir Ghassaneh, Palestine</span>
               </div>
             </div>
             

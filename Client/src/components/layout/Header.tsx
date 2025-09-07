@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, ShoppingCart, User, Search, Leaf } from 'lucide-react';
+import { Menu, X, ShoppingCart, User, Search } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,6 +24,7 @@ export default function Header() {
     { to: '/', label: 'Home' },
     { to: '/marketplace', label: 'Marketplace' },
     { to: '/roots', label: 'Roots Program' },
+ 
   ];
 
   return (

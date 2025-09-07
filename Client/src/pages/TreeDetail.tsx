@@ -167,32 +167,37 @@ export default function TreeDetail() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-semibold text-green-900">Adoption Package</h3>
-                  <span className="text-3xl font-bold text-green-800">${tree.adoptionPrice}</span>
+                  <span className="text-3xl font-bold text-green-800">99JOD</span>
                   <span className="text-green-600 ml-2">/year</span>
                 </div>
                 <TreePine className="w-12 h-12 text-green-600" />
               </div>
               
-              <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="text-center">
                   <Coins className="w-6 h-6 text-yellow-600 mx-auto mb-1" />
-                  <div className="text-sm font-medium text-green-800">$33</div>
-                  <div className="text-xs text-green-700">TUT Tokens</div>
-                </div>
-                <div className="text-center">
-                  <Heart className="w-6 h-6 text-red-600 mx-auto mb-1" />
-                  <div className="text-sm font-medium text-green-800">$33</div>
-                  <div className="text-xs text-green-700">To Farmer</div>
+                  <div className="text-sm font-medium text-green-800">22 TUT</div>
+                  <div className="text-xs text-green-700">750ml Olive Oil</div>
                 </div>
                 <div className="text-center">
                   <Award className="w-6 h-6 text-blue-600 mx-auto mb-1" />
-                  <div className="text-sm font-medium text-green-800">NFT</div>
+                  <div className="text-sm font-medium text-green-800">Digital</div>
                   <div className="text-xs text-green-700">Certificate</div>
+                </div>
+                <div className="text-center">
+                  <Heart className="w-6 h-6 text-red-600 mx-auto mb-1" />
+                  <div className="text-sm font-medium text-green-800">Farmer</div>
+                  <div className="text-xs text-green-700">Support</div>
+                </div>
+                <div className="text-center">
+                  <TreePine className="w-6 h-6 text-green-600 mx-auto mb-1" />
+                  <div className="text-sm font-medium text-green-800">Permanent</div>
+                  <div className="text-xs text-green-700">Record</div>
                 </div>
               </div>
               
               <p className="text-sm text-green-700">
-                Includes digital certificate, TUT tokens, and direct farmer support
+                Includes digital certificate, 22 TUT tokens for olive oil, farmer support, and permanent record
               </p>
             </div>
 
@@ -315,7 +320,7 @@ export default function TreeDetail() {
                     <li className="flex items-start">
                       <Coins className="w-5 h-5 text-yellow-600 mr-3 mt-0.5" />
                       <div>
-                        <div className="font-medium">$33 Worth of TUT Tokens</div>
+                        <div className="font-medium">22 TUT Tokens for Olive Oil</div>
                         <div className="text-sm text-green-700">Credited directly to your Zeituna wallet</div>
                       </div>
                     </li>
@@ -323,7 +328,7 @@ export default function TreeDetail() {
                       <Heart className="w-5 h-5 text-red-600 mr-3 mt-0.5" />
                       <div>
                         <div className="font-medium">Direct Farmer Support</div>
-                        <div className="text-sm text-green-700">$33 paid directly to {tree.farmerName} in ILS</div>
+                        <div className="text-sm text-green-700">Some of the money paid directly to {tree.farmerName}</div>
                       </div>
                     </li>
                     <li className="flex items-start">

@@ -3,6 +3,7 @@ const Product = require('../models/product');
 const Tree = require('../models/tree');
 const LandPlot = require('../models/landPlot');
 const Transaction = require('../models/transaction');
+const Order = require('../models/order');
 const TokenBalance = require('../models/tokenBalance');
 
 // @desc    Get dashboard overview
@@ -13,9 +14,10 @@ exports.getOverview = async (req, res) => {
     const totalUsers = await User.countDocuments();
     const totalProducts = await Product.countDocuments();
     const totalTrees = await Tree.countDocuments();
+    const totalOrders = await Order.countDocuments();
     const totalTransactions = await Transaction.countDocuments();
 
-    const recentTransactions = await Transaction.find()
+    const recentOrders = await Order.find()
       .sort('-createdAt')
       .limit(5)
       .populate('user', 'name email');
@@ -37,10 +39,11 @@ exports.getOverview = async (req, res) => {
           totalUsers,
           totalProducts,
           totalTrees,
+          totalOrders,
           totalTransactions
         },
         recent: {
-          transactions: recentTransactions,
+          orders: recentOrders,
           trees: recentTrees,
           products: recentProducts
         }
@@ -159,6 +162,34 @@ exports.updateUserRole = async (req, res) => {
   }
 };
 
+// @desc    Delete user
+// @route   DELETE /api/admin/users/:id
+// @access  Private/Admin
+exports.deleteUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
 // @desc    Get all products
 // @route   GET /api/admin/products
 // @access  Private/Admin
@@ -166,7 +197,7 @@ exports.getProducts = async (req, res) => {
   try {
     const products = await Product.find()
       .populate('seller', 'name email')
-      .populate('reviews.user', 'name');
+      .sort('-createdAt');
 
     res.json({
       success: true,
@@ -186,110 +217,14 @@ exports.getProducts = async (req, res) => {
 // @access  Private/Admin
 exports.createProduct = async (req, res) => {
   try {
-    const productData = {
-      ...req.body,
-      seller: req.user._id // Set the current admin as the seller
-    };
+    const product = new Product(req.body);
+    await product.save();
 
-    const product = await Product.create(productData);
+    await product.populate('seller', 'name email');
 
     res.status(201).json({
       success: true,
       data: product
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-};
-
-// @desc    Get all trees
-// @route   GET /api/admin/trees
-// @access  Private/Admin
-exports.getTrees = async (req, res) => {
-  try {
-    const trees = await Tree.find()
-      .populate('farmer', 'name email')
-      .populate('adopters', 'name');
-
-    res.json({
-      success: true,
-      count: trees.length,
-      data: trees
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-};
-
-// @desc    Create new tree
-// @route   POST /api/admin/trees
-// @access  Private/Admin
-exports.createTree = async (req, res) => {
-  try {
-    const treeData = {
-      ...req.body,
-      farmer: req.user._id // Set the current admin as the farmer
-    };
-
-    const tree = await Tree.create(treeData);
-
-    res.status(201).json({
-      success: true,
-      data: tree
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-};
-
-// @desc    Get all transactions
-// @route   GET /api/admin/transactions
-// @access  Private/Admin
-exports.getTransactions = async (req, res) => {
-  try {
-    const transactions = await Transaction.find()
-      .populate('user', 'name email')
-      .populate('items.item');
-
-    res.json({
-      success: true,
-      count: transactions.length,
-      data: transactions
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-};
-
-// @desc    Delete user
-// @route   DELETE /api/admin/users/:id
-// @access  Private/Admin
-exports.deleteUser = async (req, res) => {
-  try {
-    const user = await User.findByIdAndDelete(req.params.id);
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'User deleted successfully'
     });
   } catch (error) {
     res.status(500).json({
@@ -334,7 +269,7 @@ exports.updateProduct = async (req, res) => {
 // @access  Private/Admin
 exports.deleteProduct = async (req, res) => {
   try {
-    const product = await Product.findByIdAndDelete(req.params.id);
+    const product = await Product.findById(req.params.id);
 
     if (!product) {
       return res.status(404).json({
@@ -343,9 +278,57 @@ exports.deleteProduct = async (req, res) => {
       });
     }
 
+    await Product.findByIdAndDelete(req.params.id);
+
     res.json({
       success: true,
       message: 'Product deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get all trees
+// @route   GET /api/admin/trees
+// @access  Private/Admin
+exports.getTrees = async (req, res) => {
+  try {
+    const trees = await Tree.find()
+      .populate('farmer', 'name email')
+      .populate('landPlot', 'name location')
+      .sort('-createdAt');
+
+    res.json({
+      success: true,
+      count: trees.length,
+      data: trees
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+// @desc    Create new tree
+// @route   POST /api/admin/trees
+// @access  Private/Admin
+exports.createTree = async (req, res) => {
+  try {
+    const tree = new Tree(req.body);
+    await tree.save();
+
+    await tree.populate('farmer', 'name email');
+    await tree.populate('landPlot', 'name location');
+
+    res.status(201).json({
+      success: true,
+      data: tree
     });
   } catch (error) {
     res.status(500).json({
@@ -364,7 +347,7 @@ exports.updateTree = async (req, res) => {
       req.params.id,
       req.body,
       { new: true, runValidators: true }
-    ).populate('farmer', 'name email');
+    ).populate('farmer', 'name email').populate('landPlot', 'name location');
 
     if (!tree) {
       return res.status(404).json({
@@ -390,7 +373,7 @@ exports.updateTree = async (req, res) => {
 // @access  Private/Admin
 exports.deleteTree = async (req, res) => {
   try {
-    const tree = await Tree.findByIdAndDelete(req.params.id);
+    const tree = await Tree.findById(req.params.id);
 
     if (!tree) {
       return res.status(404).json({
@@ -399,60 +382,11 @@ exports.deleteTree = async (req, res) => {
       });
     }
 
+    await Tree.findByIdAndDelete(req.params.id);
+
     res.json({
       success: true,
       message: 'Tree deleted successfully'
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-};
-
-// @desc    Update transaction
-// @route   PUT /api/admin/transactions/:id
-// @access  Private/Admin
-exports.updateTransaction = async (req, res) => {
-  try {
-    const transaction = await Transaction.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    ).populate('user', 'name email');
-
-    if (!transaction) {
-      return res.status(404).json({
-        success: false,
-        error: 'Transaction not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: transaction
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-};
-
-// @desc    Get token balances
-// @route   GET /api/admin/token-balances
-// @access  Private/Admin
-exports.getTokenBalances = async (req, res) => {
-  try {
-    const tokenBalances = await TokenBalance.find()
-      .populate('user', 'name email');
-
-    res.json({
-      success: true,
-      count: tokenBalances.length,
-      data: tokenBalances
     });
   } catch (error) {
     res.status(500).json({
@@ -469,7 +403,7 @@ exports.getLandPlots = async (req, res) => {
   try {
     const landPlots = await LandPlot.find()
       .populate('farmer', 'name email')
-      .populate('adoptions.user', 'name');
+      .sort('-createdAt');
 
     res.json({
       success: true,
@@ -489,12 +423,10 @@ exports.getLandPlots = async (req, res) => {
 // @access  Private/Admin
 exports.createLandPlot = async (req, res) => {
   try {
-    const landPlotData = {
-      ...req.body,
-      farmer: req.user._id // Set the current admin as the farmer
-    };
+    const landPlot = new LandPlot(req.body);
+    await landPlot.save();
 
-    const landPlot = await LandPlot.create(landPlotData);
+    await landPlot.populate('farmer', 'name email');
 
     res.status(201).json({
       success: true,
@@ -543,7 +475,7 @@ exports.updateLandPlot = async (req, res) => {
 // @access  Private/Admin
 exports.deleteLandPlot = async (req, res) => {
   try {
-    const landPlot = await LandPlot.findByIdAndDelete(req.params.id);
+    const landPlot = await LandPlot.findById(req.params.id);
 
     if (!landPlot) {
       return res.status(404).json({
@@ -551,6 +483,8 @@ exports.deleteLandPlot = async (req, res) => {
         error: 'Land plot not found'
       });
     }
+
+    await LandPlot.findByIdAndDelete(req.params.id);
 
     res.json({
       success: true,
@@ -562,4 +496,183 @@ exports.deleteLandPlot = async (req, res) => {
       error: error.message
     });
   }
-}; 
+};
+
+// @desc    Get all orders
+// @route   GET /api/admin/orders
+// @access  Private/Admin
+exports.getOrders = async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate('user', 'name email')
+      .populate('items.item')
+      .sort('-createdAt');
+
+    res.json({
+      success: true,
+      count: orders.length,
+      data: orders
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get single order
+// @route   GET /api/admin/orders/:id
+// @access  Private/Admin
+exports.getOrder = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id)
+      .populate('user', 'name email')
+      .populate('items.item');
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: order
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+// @desc    Update order status
+// @route   PUT /api/admin/orders/:id/status
+// @access  Private/Admin
+exports.updateOrderStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    if (!['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid status'
+      });
+    }
+
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true, runValidators: true }
+    ).populate('user', 'name email');
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: order
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+// @desc    Update payment status
+// @route   PUT /api/admin/orders/:id/payment-status
+// @access  Private/Admin
+exports.updatePaymentStatus = async (req, res) => {
+  try {
+    const { paymentStatus } = req.body;
+
+    if (!['pending', 'processing', 'completed', 'failed', 'refunded'].includes(paymentStatus)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid payment status'
+      });
+    }
+
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      { paymentStatus },
+      { new: true, runValidators: true }
+    ).populate('user', 'name email');
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: order
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+// @desc    Delete order
+// @route   DELETE /api/admin/orders/:id
+// @access  Private/Admin
+exports.deleteOrder = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+
+    await Order.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: 'Order deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get token balances
+// @route   GET /api/admin/token-balances
+// @access  Private/Admin
+exports.getTokenBalances = async (req, res) => {
+  try {
+    const tokenBalances = await TokenBalance.find()
+      .populate('user', 'name email')
+      .sort('-balance');
+
+    res.json({
+      success: true,
+      count: tokenBalances.length,
+      data: tokenBalances
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};

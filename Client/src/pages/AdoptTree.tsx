@@ -10,23 +10,23 @@ import landPlotService, { LandPlot } from '../services/landPlotService';
 const adoptionFeatures = [
   {
     icon: Award,
-    title: 'NFT Certificate',
+    title: 'Digital Certificate',
     description: 'Digital certificate of adoption valid for 1 year'
   },
   {
     icon: Coins,
-    title: 'TUT Tokens',
-    description: '$33 worth of tokens credited to your wallet'
+    title: '22 TUT Tokens',
+    description: 'Redeemable for 750ml premium olive oil'
   },
   {
     icon: Heart,
     title: 'Support Farmers',
-    description: '$33 paid directly to the tree\'s farmer'
+    description: 'Some of the money will be redirected to the farmers'
   },
   {
     icon: TreePine,
     title: 'Tree History',
-    description: 'Your name added to the tree\'s permanent record'
+    description: 'Your name permanently recorded in Zeituna and Tourath records'
   }
 ];
 
@@ -51,9 +51,8 @@ export default function AdoptTree() {
           console.log('No land plots found or response not successful');
           setError('No land plots available for adoption');
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching land plots:', err);
-        console.error('Error details:', err.response?.data);
         setError('Failed to load land plot information');
       } finally {
         setLoading(false);
@@ -119,7 +118,7 @@ export default function AdoptTree() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="text-xl text-gray-600 max-w-3xl mx-auto mb-8"
             >
-              Choose from our carefully managed land plots and adopt a tree for $99/year. 
+              Choose from our carefully managed land plots and adopt a tree for 99JOD / year. 
               Receive an NFT certificate, earn TUT tokens, and directly support Mediterranean farmers.
             </motion.p>
 
@@ -132,7 +131,7 @@ export default function AdoptTree() {
             >
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Adoption Package</h2>
-                <div className="text-4xl font-bold text-green-600 mb-2">$99/year</div>
+                <div className="text-4xl font-bold text-green-600 mb-2">99JOD / year</div>
                 <p className="text-gray-600">Symbolic Annual Adoption</p>
               </div>
 
@@ -153,7 +152,7 @@ export default function AdoptTree() {
       </section>
 
       {/* Land Plots for Adoption */}
-      <section className="py-20 bg-white">
+      <section id="land-plots" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -298,60 +297,136 @@ export default function AdoptTree() {
       </section>
 
       {/* How It Works */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-gradient-to-br from-green-50 via-blue-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-16"
+          >
+            <div className="inline-flex items-center bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
+              <Info className="w-4 h-4 mr-2" />
+              Simple Process
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
               How Land Plot Adoption Works
             </h2>
-            <p className="text-xl text-gray-600">
-              Simple steps to adopt a tree from our managed land plots
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Follow these simple steps to adopt a tree and make a lasting impact on the environment
             </p>
+          </motion.div>
+
+          <div className="relative">
+            {/* Connection Lines for Desktop */}
+            <div className="hidden lg:block absolute top-24 left-0 right-0 h-0.5 bg-gradient-to-r from-green-200 via-blue-200 to-green-200 z-0"></div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10">
+              {[
+                {
+                  step: 1,
+                  title: 'Choose Land Plot',
+                  description: 'Select from our carefully managed land plots and pick a tree to adopt',
+                  icon: TreePine,
+                  color: 'from-green-500 to-green-600',
+                  bgColor: 'bg-green-50',
+                  iconColor: 'text-green-600'
+                },
+                {
+                  step: 2,
+                  title: 'Complete Payment',
+                  description: 'Pay 99JOD for one-year symbolic adoption with instant confirmation',
+                  icon: Heart,
+                  color: 'from-red-500 to-pink-600',
+                  bgColor: 'bg-red-50',
+                  iconColor: 'text-red-600'
+                },
+                {
+                  step: 3,
+                  title: 'Receive Certificate & Tokens',
+                  description: 'Get your digital certificate and 22 TUT tokens redeemable for olive oil',
+                  icon: Award,
+                  color: 'from-blue-500 to-blue-600',
+                  bgColor: 'bg-blue-50',
+                  iconColor: 'text-blue-600'
+                },
+                {
+                  step: 4,
+                  title: 'Support Farmers',
+                  description: 'Some of the money goes directly to the farmer caring for your adopted tree',
+                  icon: Users,
+                  color: 'from-purple-500 to-purple-600',
+                  bgColor: 'bg-purple-50',
+                  iconColor: 'text-purple-600'
+                }
+              ].map((step) => (
+                <motion.div
+                  key={step.step}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: step.step * 0.2 }}
+                  className="relative"
+                >
+                  {/* Step Card */}
+                  <div className={`${step.bgColor} rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-white/50 backdrop-blur-sm`}>
+                    {/* Step Number Badge */}
+                    <div className={`inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r ${step.color} text-white rounded-full text-lg font-bold mb-4 shadow-lg`}>
+                      {step.step}
+                    </div>
+                    
+                    {/* Icon */}
+                    <div className={`w-16 h-16 ${step.bgColor} rounded-xl flex items-center justify-center mx-auto mb-4 border-2 border-white shadow-md`}>
+                      <step.icon className={`w-8 h-8 ${step.iconColor}`} />
+                    </div>
+                    
+                    {/* Content */}
+                    <h3 className="text-xl font-bold text-gray-900 mb-3 text-center">{step.title}</h3>
+                    <p className="text-gray-600 text-center leading-relaxed">{step.description}</p>
+                  </div>
+                  
+                  {/* Arrow for Mobile */}
+                  {step.step < 4 && (
+                    <div className="lg:hidden flex justify-center mt-6">
+                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {[
-              {
-                step: 1,
-                title: 'Choose Land Plot',
-                description: 'Select from our managed land plots and adopt a tree',
-                icon: TreePine
-              },
-              {
-                step: 2,
-                title: 'Complete Payment',
-                description: 'Pay $99 for one-year symbolic adoption with instant confirmation',
-                icon: Heart
-              },
-              {
-                step: 3,
-                title: 'Receive NFT & Tokens',
-                description: 'Get your digital certificate and $33 worth of TUT tokens',
-                icon: Award
-              },
-              {
-                step: 4,
-                title: 'Support Farmers',
-                description: '$33 goes directly to the farmer caring for your adopted tree',
-                icon: Users
-              }
-            ].map((step) => (
-              <motion.div
-                key={step.step}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: step.step * 0.2 }}
-                className="text-center"
-              >
-                <div className="w-16 h-16 bg-green-600 text-white rounded-full flex items-center justify-center mx-auto mb-6 text-xl font-bold">
-                  {step.step}
-                </div>
-                <step.icon className="w-12 h-12 text-green-600 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">{step.title}</h3>
-                <p className="text-gray-600">{step.description}</p>
-              </motion.div>
-            ))}
-          </div>
+          {/* Call to Action */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.8 }}
+            className="text-center mt-16"
+          >
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-green-100 max-w-2xl mx-auto">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Ready to Make a Difference?</h3>
+              <p className="text-gray-600 mb-6">
+                Join thousands of people who have already adopted trees and are making a positive impact on the environment.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={() => document.getElementById('land-plots')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="bg-gradient-to-r from-green-600 to-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-green-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  Browse Land Plots
+                </button>
+                <Link
+                  to="/roots"
+                  className="border-2 border-green-600 text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-green-600 hover:text-white transition-all duration-200"
+                >
+                  Learn More
+                </Link>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 

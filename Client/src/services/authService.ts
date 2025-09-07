@@ -47,6 +47,12 @@ export interface ProfileResponse {
   };
 }
 
+export interface UsersResponse {
+  success: boolean;
+  count: number;
+  data: User[];
+}
+
 const authService = {
   // Register a new user
   register: async (data: RegisterData): Promise<AuthResponse> => {
@@ -81,6 +87,12 @@ const authService = {
   // Disconnect wallet from user account
   disconnectWallet: async (): Promise<{ success: boolean; message: string }> => {
     const response = await api.post('/auth/disconnect-wallet');
+    return response.data;
+  },
+
+  // Get all users (admin only)
+  getUsers: async (): Promise<UsersResponse> => {
+    const response = await api.get('/admin/users');
     return response.data;
   },
 

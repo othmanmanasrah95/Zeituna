@@ -12,11 +12,18 @@ import {
   Package,
   Leaf,
   X,
-  Tag
+  Tag,
+  Receipt,
+  Eye,
+  CheckCircle,
+  Clock,
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '../../config/api';
 import landPlotService, { LandPlot } from '../../services/landPlotService';
+import authService, { User } from '../../services/authService';
 import DiscountManagement from '../../components/admin/DiscountManagement';
 
 // Admin Components
@@ -361,6 +368,7 @@ function AddUserForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
             >
               <option value="user">User</option>
               <option value="admin">Admin</option>
+              <option value="farmer">Farmer</option>
             </select>
           </div>
 
@@ -454,6 +462,7 @@ function EditUserForm({ user, onClose, onSuccess }: { user: any; onClose: () => 
             >
               <option value="user">User</option>
               <option value="admin">Admin</option>
+              <option value="farmer">Farmer</option>
             </select>
           </div>
 
@@ -2021,17 +2030,39 @@ function AddLandPlotForm({ onClose, onSuccess }: { onClose: () => void; onSucces
     estimatedCO2Absorption: '',
     images: [''],
     benefits: [''],
-    status: 'Available'
+    status: 'Available',
+    farmer: ''
   });
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // Fetch users for farmer selection
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      try {
+        const response = await authService.getUsers();
+        if (response.success) {
+          setUsers(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate required fields
     if (!formData.name.trim() || !formData.location.trim() || !formData.description.trim() || 
-        !formData.totalTrees || !formData.adoptionPrice || !formData.images[0]?.trim()) {
-      alert('Please fill in all required fields');
+        !formData.totalTrees || !formData.adoptionPrice || !formData.images[0]?.trim() || !formData.farmer) {
+      alert('Please fill in all required fields including farmer selection');
       return;
     }
 
@@ -2125,6 +2156,27 @@ function AddLandPlotForm({ onClose, onSuccess }: { onClose: () => void; onSucces
                   placeholder="e.g., Andalusia, Spain"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Farmer *</label>
+              <select
+                required
+                value={formData.farmer}
+                onChange={(e) => setFormData(prev => ({ ...prev, farmer: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                disabled={loadingUsers}
+              >
+                <option value="">Select a farmer</option>
+                {users.map((user) => (
+                  <option key={user._id} value={user._id}>
+                    {user.name} ({user.email})
+                  </option>
+                ))}
+              </select>
+              {loadingUsers && (
+                <p className="text-sm text-gray-500 mt-1">Loading farmers...</p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -2313,9 +2365,31 @@ function EditLandPlotForm({ landPlot, onClose, onSuccess }: { landPlot: LandPlot
     estimatedCO2Absorption: landPlot.estimatedCO2Absorption || '',
     images: landPlot.images && landPlot.images.length > 0 ? landPlot.images : [''],
     benefits: landPlot.benefits && landPlot.benefits.length > 0 ? landPlot.benefits : [''],
-    status: landPlot.status || 'Available'
+    status: landPlot.status || 'Available',
+    farmer: landPlot.farmer?._id || ''
   });
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // Fetch users for farmer selection
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      try {
+        const response = await authService.getUsers();
+        if (response.success) {
+          setUsers(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2408,6 +2482,27 @@ function EditLandPlotForm({ landPlot, onClose, onSuccess }: { landPlot: LandPlot
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Farmer *</label>
+              <select
+                required
+                value={formData.farmer}
+                onChange={(e) => setFormData(prev => ({ ...prev, farmer: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                disabled={loadingUsers}
+              >
+                <option value="">Select a farmer</option>
+                {users.map((user) => (
+                  <option key={user._id} value={user._id}>
+                    {user.name} ({user.email})
+                  </option>
+                ))}
+              </select>
+              {loadingUsers && (
+                <p className="text-sm text-gray-500 mt-1">Loading farmers...</p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -2573,6 +2668,449 @@ function EditLandPlotForm({ landPlot, onClose, onSuccess }: { landPlot: LandPlot
   );
 }
 
+// Admin Orders Component
+function AdminOrders() {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [showOrderDetails, setShowOrderDetails] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/admin/orders');
+      setOrders(response.data.data || []);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    try {
+      await api.put(`/admin/orders/${orderId}/status`, { status: newStatus });
+      setOrders(orders.map(order => 
+        order._id === orderId ? { ...order, status: newStatus } : order
+      ));
+      if (selectedOrder && selectedOrder._id === orderId) {
+        setSelectedOrder({ ...selectedOrder, status: newStatus });
+      }
+    } catch (error) {
+      console.error('Error updating order status:', error);
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'delivered':
+        return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'shipped':
+        return <CheckCircle className="w-4 h-4 text-blue-600" />;
+      case 'processing':
+        return <Clock className="w-4 h-4 text-blue-600" />;
+      case 'confirmed':
+        return <Clock className="w-4 h-4 text-blue-600" />;
+      case 'pending':
+        return <AlertCircle className="w-4 h-4 text-yellow-600" />;
+      case 'cancelled':
+        return <XCircle className="w-4 h-4 text-red-600" />;
+      case 'refunded':
+        return <XCircle className="w-4 h-4 text-red-600" />;
+      default:
+        return <Clock className="w-4 h-4 text-gray-600" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'delivered':
+        return 'bg-green-100 text-green-800';
+      case 'shipped':
+        return 'bg-blue-100 text-blue-800';
+      case 'processing':
+        return 'bg-blue-100 text-blue-800';
+      case 'confirmed':
+        return 'bg-blue-100 text-blue-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
+      case 'refunded':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const filteredOrders = orders.filter(order => {
+    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+    const matchesSearch = order.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         order.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         order._id.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading orders...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Order Management</h1>
+          <p className="text-gray-600">Manage customer orders and transactions</p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="Search orders by customer name, email, or order ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="all">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="processing">Processing</option>
+              <option value="shipped">Shipped</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="refunded">Refunded</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Orders Table */}
+      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Order ID
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Customer
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Type
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Items
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Total
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredOrders.map((order) => (
+                <tr key={order._id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {order.orderNumber || `#${order._id.slice(-8)}`}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {order.user?.name || 'Unknown'}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {order.user?.email || 'No email'}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <span className="capitalize">{order.type?.replace('_', ' ')}</span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {order.items?.length || 0} item(s)
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    ${order.totalAmount?.toFixed(2) || '0.00'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                      {getStatusIcon(order.status)}
+                      <span className="ml-1 capitalize">{order.status}</span>
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {new Date(order.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => {
+                          setSelectedOrder(order);
+                          setShowOrderDetails(true);
+                        }}
+                        className="text-green-600 hover:text-green-900 flex items-center"
+                      >
+                        <Eye className="w-4 h-4 mr-1" />
+                        View
+                      </button>
+                      {order.status === 'pending' && (
+                        <button
+                          onClick={() => updateOrderStatus(order._id, 'confirmed')}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          Confirm
+                        </button>
+                      )}
+                      {order.status === 'confirmed' && (
+                        <button
+                          onClick={() => updateOrderStatus(order._id, 'processing')}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          Process
+                        </button>
+                      )}
+                      {order.status === 'processing' && (
+                        <button
+                          onClick={() => updateOrderStatus(order._id, 'shipped')}
+                          className="text-green-600 hover:text-green-900"
+                        >
+                          Ship
+                        </button>
+                      )}
+                      {order.status === 'shipped' && (
+                        <button
+                          onClick={() => updateOrderStatus(order._id, 'delivered')}
+                          className="text-green-600 hover:text-green-900"
+                        >
+                          Deliver
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {filteredOrders.length === 0 && (
+          <div className="text-center py-12">
+            <Receipt className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No orders found</h3>
+            <p className="text-gray-500">
+              {searchTerm || statusFilter !== 'all' 
+                ? 'Try adjusting your search or filter criteria.'
+                : 'Orders will appear here once customers start making purchases.'
+              }
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Order Details Modal */}
+      {showOrderDetails && selectedOrder && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                Order Details - {selectedOrder.orderNumber || `#${selectedOrder._id.slice(-8)}`}
+              </h3>
+              <button
+                onClick={() => setShowOrderDetails(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Order Information */}
+              <div className="space-y-4">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2">Customer Information</h4>
+                  <div className="space-y-1 text-sm">
+                    <p><span className="font-medium">Name:</span> {selectedOrder.user?.name || 'Unknown'}</p>
+                    <p><span className="font-medium">Email:</span> {selectedOrder.user?.email || 'No email'}</p>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2">Order Information</h4>
+                  <div className="space-y-1 text-sm">
+                    <p><span className="font-medium">Type:</span> <span className="capitalize">{selectedOrder.type?.replace('_', ' ')}</span></p>
+                    <p><span className="font-medium">Status:</span> 
+                      <span className={`ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedOrder.status)}`}>
+                        {getStatusIcon(selectedOrder.status)}
+                        <span className="ml-1 capitalize">{selectedOrder.status}</span>
+                      </span>
+                    </p>
+                    <p><span className="font-medium">Payment Method:</span> {selectedOrder.paymentMethod || 'Unknown'}</p>
+                    <p><span className="font-medium">Payment Status:</span> <span className="capitalize">{selectedOrder.paymentStatus || 'Unknown'}</span></p>
+                    <p><span className="font-medium">Date:</span> {new Date(selectedOrder.createdAt).toLocaleString()}</p>
+                  </div>
+                </div>
+
+                {selectedOrder.shippingAddress && (
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-900 mb-2">Shipping Address</h4>
+                    <div className="text-sm">
+                      <p>{selectedOrder.shippingAddress.street}</p>
+                      <p>{selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state} {selectedOrder.shippingAddress.zipCode}</p>
+                      <p>{selectedOrder.shippingAddress.country}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Order Items */}
+              <div className="space-y-4">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2">Order Items</h4>
+                  <div className="space-y-3">
+                    {selectedOrder.items?.map((item: any, index: number) => (
+                      <div key={index} className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
+                          {item.type === 'tree' ? (
+                            <TreePine className="w-6 h-6 text-green-600" />
+                          ) : (
+                            <Package className="w-6 h-6 text-blue-600" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900">
+                            {item.type === 'tree' ? 'Tree Adoption' : 'Product'}
+                          </p>
+                          <p className="text-xs text-gray-500">Quantity: {item.quantity}</p>
+                        </div>
+                        <div className="text-sm font-medium text-gray-900">
+                          ${item.price?.toFixed(2) || '0.00'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2">Order Summary</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Subtotal:</span>
+                      <span>${selectedOrder.totalAmount?.toFixed(2) || '0.00'}</span>
+                    </div>
+                    {selectedOrder.tutUsed > 0 && (
+                      <div className="flex justify-between">
+                        <span>TUT Tokens Used:</span>
+                        <span>-{selectedOrder.tutUsed}</span>
+                      </div>
+                    )}
+                    {selectedOrder.tokenReward > 0 && (
+                      <div className="flex justify-between">
+                        <span>Token Reward:</span>
+                        <span>+{selectedOrder.tokenReward}</span>
+                      </div>
+                    )}
+                    <div className="border-t pt-2 flex justify-between font-medium">
+                      <span>Total:</span>
+                      <span>${selectedOrder.totalAmount?.toFixed(2) || '0.00'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-3 mt-6 pt-4 border-t">
+              <button
+                onClick={() => setShowOrderDetails(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Close
+              </button>
+              {selectedOrder.status === 'pending' && (
+                <button
+                  onClick={() => {
+                    updateOrderStatus(selectedOrder._id, 'confirmed');
+                    setShowOrderDetails(false);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Confirm Order
+                </button>
+              )}
+              {selectedOrder.status === 'confirmed' && (
+                <button
+                  onClick={() => {
+                    updateOrderStatus(selectedOrder._id, 'processing');
+                    setShowOrderDetails(false);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Start Processing
+                </button>
+              )}
+              {selectedOrder.status === 'processing' && (
+                <button
+                  onClick={() => {
+                    updateOrderStatus(selectedOrder._id, 'shipped');
+                    setShowOrderDetails(false);
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  Mark as Shipped
+                </button>
+              )}
+              {selectedOrder.status === 'shipped' && (
+                <button
+                  onClick={() => {
+                    updateOrderStatus(selectedOrder._id, 'delivered');
+                    setShowOrderDetails(false);
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  Mark as Delivered
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const location = useLocation();
   
@@ -2603,6 +3141,7 @@ export default function AdminDashboard() {
     { name: 'Overview', href: '/admin', icon: BarChart3, current: location.pathname === '/admin' },
     { name: 'Users', href: '/admin/users', icon: Users, current: location.pathname === '/admin/users' },
     { name: 'Products', href: '/admin/products', icon: ShoppingBag, current: location.pathname === '/admin/products' },
+    { name: 'Orders', href: '/admin/orders', icon: Receipt, current: location.pathname === '/admin/orders' },
     { name: 'Land Plots', href: '/admin/land-plots', icon: TreePine, current: location.pathname === '/admin/land-plots' },
     { name: 'Trees', href: '/admin/trees', icon: TreePine, current: location.pathname === '/admin/trees' },
     { name: 'Discounts', href: '/admin/discounts', icon: Tag, current: location.pathname === '/admin/discounts' },
@@ -2653,6 +3192,7 @@ export default function AdminDashboard() {
             <Route path="/" element={<AdminOverview />} />
             <Route path="/users" element={<AdminUsers />} />
             <Route path="/products" element={<AdminProducts />} />
+            <Route path="/orders" element={<AdminOrders />} />
             <Route path="/land-plots" element={<AdminLandPlots />} />
             <Route path="/trees" element={<AdminTrees />} />
             <Route path="/discounts" element={<DiscountManagement />} />

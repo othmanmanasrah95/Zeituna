@@ -14,6 +14,7 @@ const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
 const treeRoutes = require('./routes/treeRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
+const orderRoutes = require('./routes/orderRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const discountRoutes = require('./routes/discountRoutes');
 
@@ -62,6 +63,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/trees', treeRoutes);
 app.use('/api/land-plots', require('./routes/landPlotRoutes'));
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/discounts', discountRoutes);
 

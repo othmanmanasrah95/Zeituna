@@ -19,6 +19,7 @@ export default function ProductDetail() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAddedMessage, setShowAddedMessage] = useState(false);
 
   // Fetch product data
   useEffect(() => {
@@ -80,15 +81,32 @@ export default function ProductDetail() {
   }
 
   const handleAddToCart = () => {
+    console.log('Add to Cart clicked!');
+    console.log('Product:', product);
+    console.log('Quantity:', quantity);
+    
+    if (!product) {
+      console.error('No product data available');
+      return;
+    }
+    
     for (let i = 0; i < quantity; i++) {
-      addItem({
+      const cartItem = {
         id: product._id,
         name: product.name,
         price: product.price,
         image: product.images[0],
-        type: 'product'
-      });
+        type: 'product' as const
+      };
+      console.log('Adding item to cart:', cartItem);
+      addItem(cartItem);
     }
+    
+    console.log('Items added to cart successfully');
+    
+    // Show success message
+    setShowAddedMessage(true);
+    setTimeout(() => setShowAddedMessage(false), 3000);
   };
 
   const tabs = [
@@ -269,6 +287,29 @@ export default function ProductDetail() {
                   <Heart className="w-5 h-5 text-gray-600" />
                 </button>
               </div>
+              
+              {/* Success Message */}
+              {showAddedMessage && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg"
+                >
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium">
+                        {quantity} {quantity === 1 ? 'item' : 'items'} added to cart!
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
             </div>
 
             {/* Shipping Info */}
