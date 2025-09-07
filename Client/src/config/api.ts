@@ -1,6 +1,18 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:7000/api';
+// Detect if we're running in GitHub Codespaces
+const isCodespace = window.location.hostname.includes('githubpreview.dev') || 
+                   window.location.hostname.includes('preview.app.github.dev') ||
+                   process.env.CODESPACE_NAME;
+
+// Use environment variable for API URL, fallback to localhost for local development
+const API_URL = process.env.VITE_API_URL || 
+                (isCodespace ? `https://${window.location.hostname.replace('3000', '7000')}/api` : 'http://localhost:7000/api');
+
+// Log the API URL for debugging
+console.log('🔗 API URL configured as:', API_URL);
+console.log('🌐 Current hostname:', window.location.hostname);
+console.log('🔍 Is Codespace detected:', isCodespace);
 
 const api = axios.create({
   baseURL: API_URL,
