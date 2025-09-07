@@ -39,7 +39,31 @@ const sensitiveLimiter = rateLimit({
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost for local development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
+    // Allow GitHub Codespaces domains
+    if (origin.includes('githubpreview.dev') || origin.includes('preview.app.github.dev')) {
+      return callback(null, true);
+    }
+    
+    // Allow custom frontend URL from environment
+    const allowedOrigins = [
+      process.env.FRONTEND_URL || "http://localhost:5173"
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
