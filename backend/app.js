@@ -4,7 +4,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const connectDB = require('./config/db');
 const User = require('./models/user');
-const { corsOptions, securityHeaders, apiLimiter } = require('./middleware/security');
+const {  securityHeaders, apiLimiter } = require('./middleware/security'); //corsOptions,
 const { errorHandler, notFound } = require('./middleware/errorHandler');
 
 // Route files
@@ -23,6 +23,17 @@ const app = express();
 
 // Connect to database
 connectDB();
+
+// Configure CORS
+const corsOptions = {
+  origin: [
+    'https://turbo-space-meme-grpw6w56vw6hvjqj-5173.app.github.dev', // Frontend URL
+    'https://turbo-space-meme-grpw6w56vw6hvjqj-7000.app.github.dev'  // Backend URL
+  ],
+  credentials: true, // Allow cookies and credentials
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+};
 
 // Global Middleware
 app.use(securityHeaders);

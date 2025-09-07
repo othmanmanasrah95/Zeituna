@@ -2,12 +2,13 @@ import axios from 'axios';
 
 // Detect if we're running in GitHub Codespaces
 const isCodespace = window.location.hostname.includes('githubpreview.dev') || 
-                   window.location.hostname.includes('preview.app.github.dev') ||
-                   process.env.CODESPACE_NAME;
+                   window.location.hostname.includes('.app.github.dev') ||
+                   window.location.hostname.includes('preview.app.github.dev');
 
-// Use environment variable for API URL, fallback to localhost for local development
-const API_URL = process.env.VITE_API_URL || 
-                (isCodespace ? `https://${window.location.hostname.replace('3000', '7000')}/api` : 'http://localhost:7000/api');
+// For Codespaces: use the backend's forwarded port URL
+// For local development: use localhost
+const API_URL = import.meta.env.VITE_API_URL || 
+                (isCodespace ? `https://${window.location.hostname.replace('5173', '7000')}/api` : 'http://localhost:7000/api');
 
 // Log the API URL for debugging
 console.log('🔗 API URL configured as:', API_URL);
