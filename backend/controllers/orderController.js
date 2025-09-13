@@ -34,6 +34,7 @@ exports.createOrder = async (req, res) => {
 
     // Calculate totals
     let subtotal = 0;
+    let tutTotal = 0;
     const processedItems = [];
 
     for (const item of items) {
@@ -52,48 +53,124 @@ exports.createOrder = async (req, res) => {
         });
       }
 
-      const itemTotal = itemData.price * item.quantity;
-      subtotal += itemTotal;
-
-      processedItems.push({
-        type: item.type,
-        item: item.item,
-        name: itemData.name,
-        image: itemData.image || itemData.photo,
-        quantity: item.quantity,
-        price: itemData.price,
-        total: itemTotal
-      });
+      // Check if item has TUT price
+      if (itemData.tutPrice) {
+        const itemTutTotal = itemData.tutPrice * item.quantity;
+        tutTotal += itemTutTotal;
+        
+        processedItems.push({
+          type: item.type,
+          item: item.item,
+          name: itemData.name,
+          image: itemData.images?.[0] || itemData.image || itemData.photo || '/default-product.png',
+          quantity: item.quantity,
+          price: 0, // Free when using TUT
+          tutPrice: itemData.tutPrice,
+          total: 0,
+          tutTotal: itemTutTotal
+        });
+      } else {
+        const itemTotal = itemData.price * item.quantity;
+        subtotal += itemTotal;
+        
+        processedItems.push({
+          type: item.type,
+          item: item.item,
+          name: itemData.name,
+          image: itemData.images?.[0] || itemData.image || itemData.photo || '/default-product.png',
+          quantity: item.quantity,
+          price: itemData.price,
+          total: itemTotal
+        });
+      }
     }
 
     // Calculate shipping (free for now)
     const shipping = 0;
     
-    // Calculate tax (8% for now)
+    // Calculate tax (8% for now, only on ILS purchases)
     const tax = subtotal * 0.08;
     
     // Calculate total
     const totalAmount = subtotal + shipping + tax - tutUsed;
 
+    // Validate TUT balance if purchasing with TUT
+    if (tutTotal > 0) {
+      const TokenBalance = require('../models/tokenBalance');
+      let tokenBalance = await TokenBalance.findOne({ user: req.user._id });
+      
+      // If no token balance record exists, create one with 0 balance
+      if (!tokenBalance) {
+        tokenBalance = new TokenBalance({
+          user: req.user._id,
+          balance: 0,
+          transactions: []
+        });
+        await tokenBalance.save();
+      }
+
+      const currentBalance = tokenBalance.transactions.reduce((total, transaction) => {
+        if (transaction.type === 'reward') {
+          return total + transaction.amount;
+        } else if (transaction.type === 'redemption') {
+          return total - transaction.amount;
+        }
+        return total;
+      }, 0);
+
+      if (currentBalance < tutTotal) {
+        return res.status(400).json({
+          success: false,
+          error: `Insufficient TUT balance. Required: ${tutTotal}, Available: ${currentBalance}`
+        });
+      }
+    }
+
     // Create order
     const order = new Order({
-      user: req.user.id,
+      user: req.user._id,
       items: processedItems,
       subtotal,
+      tutTotal, // Add TUT total
       shipping,
       tax,
       discount: tutUsed,
       totalAmount,
-      paymentMethod,
+      paymentMethod: tutTotal > 0 ? 'tut_tokens' : paymentMethod,
       shippingAddress,
       billingAddress: billingAddress || shippingAddress,
-      tutUsed,
+      tutUsed: tutUsed + tutTotal, // Include both discount and TUT purchase
       notes,
       status: 'pending',
       paymentStatus: 'pending'
     });
 
     await order.save();
+
+    // Deduct TUT tokens if purchasing with TUT
+    if (tutTotal > 0) {
+      const TokenBalance = require('../models/tokenBalance');
+      let tokenBalance = await TokenBalance.findOne({ user: req.user._id });
+      
+      // If no token balance record exists, create one with 0 balance
+      if (!tokenBalance) {
+        tokenBalance = new TokenBalance({
+          user: req.user._id,
+          balance: 0,
+          transactions: []
+        });
+      }
+      
+      tokenBalance.transactions.push({
+        type: 'redemption',
+        amount: tutTotal,
+        description: `Purchase: ${processedItems.map(item => item.name).join(', ')}`,
+        reference: order._id,
+        referenceType: 'Order'
+      });
+      
+      await tokenBalance.save();
+    }
 
     // Populate the order with user and item details
     await order.populate([

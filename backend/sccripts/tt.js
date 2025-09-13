@@ -133,4 +133,7 @@ productSchema.pre('save', function (next) {
   next();
 });
 
-module.exports = mongoose.model('Product', productSchema);
+
+const Product = mongoose.model('product', productSchema);
+
+module.exports = Product;

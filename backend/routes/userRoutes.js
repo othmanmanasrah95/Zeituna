@@ -8,6 +8,7 @@ const {
   updateUserProfile,
   getUserTransactions,
   getUserTokenBalance,
+  syncTutBalance,
   getUserTrees,
 } = require('../controllers/userController');
 
@@ -28,7 +29,11 @@ router.get('/transactions', getUserTransactions);
 
 // @route   GET /api/users/token-balance
 // @desc    Get user's token balance
-router.get('/token-balance', getUserTokenBalance);
+router.get('/token-balance', protect, getUserTokenBalance);
+
+// @route   POST /api/users/sync-tut-balance
+// @desc    Sync blockchain TUT balance with database
+router.post('/sync-tut-balance', protect, syncTutBalance);
 
 // @route   GET /api/users/my-trees
 // @desc    Get trees user adopted or planted

@@ -3,9 +3,14 @@ import { Link } from 'react-router-dom';
 import { ShoppingBag, TreePine, Coins, Heart, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
+import TokenBalance from '../components/TokenBalance';
+import tutTokenService from '../services/tutTokenService';
+import api from '../config/api';
 
 export default function Home() {
   const { addItem } = useCart();
+  const { user } = useAuth();
   
   // Features
   const features = [
@@ -40,6 +45,7 @@ export default function Home() {
     {
       size: '750ml',
       price: 18.99,
+      tutPrice: 22, // TUT price for 750ml variant
       image: '/oil.png',
       desc: 'Great value for families. Sustainably sourced, rich in antioxidants.'
     },
@@ -59,6 +65,7 @@ export default function Home() {
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showAddedMessage, setShowAddedMessage] = useState(false);
+  const [showTutMessage, setShowTutMessage] = useState(false);
   const selected = oliveOilVariants[selectedIndex];
 
   const handleAddToCart = () => {
@@ -81,6 +88,81 @@ export default function Home() {
     setTimeout(() => setShowAddedMessage(false), 3000);
     
     console.log('Home: Item added to cart successfully');
+  };
+
+  const handleBuyWithTut = async () => {
+    if (!user) {
+      alert('Please log in to use TUT tokens');
+      return;
+    }
+
+    try {
+      // First, sync the blockchain balance with the backend database
+      try {
+        await tutTokenService.syncBalanceWithBackend();
+        console.log('TUT balance synced successfully');
+      } catch (syncError) {
+        console.warn('Failed to sync TUT balance, proceeding anyway:', syncError);
+      }
+
+      // Find the 750ml olive oil product
+      const productsResponse = await api.get('/products');
+      const oliveOilProduct = productsResponse.data.data.find(
+        (product: { name: string; tutPrice: number }) => product.name === 'Premium Olive Oil 750ml' && product.tutPrice === 22
+      );
+
+      if (!oliveOilProduct) {
+        alert('750ml olive oil product not found. Please contact support.');
+        return;
+      }
+
+      // Create order with TUT payment
+      const orderData = {
+        items: [{
+          type: 'product',
+          item: '68bdb8957edbb2ba8d154399', // Use the found product ID
+          quantity: 1,
+          price: 0, // Free when using TUT
+          tutPrice: selected.tutPrice
+        }],
+        shippingAddress: {
+          firstName: user.name.split(' ')[0] || 'User',
+          lastName: user.name.split(' ')[1] || '',
+          email: user.email,
+          street: 'TUT Purchase',
+          city: 'Digital',
+          state: 'Online',
+          zipCode: '00000',
+          country: 'Digital'
+        },
+        paymentMethod: 'tut_tokens',
+        tutUsed: selected.tutPrice
+      };
+
+      const response = await api.post('/orders', orderData);
+      
+      if (response.data.success) {
+        // Show success message
+        setShowTutMessage(true);
+        setTimeout(() => setShowTutMessage(false), 5000);
+        
+        console.log('TUT purchase successful:', response.data);
+      }
+    } catch (error: unknown) {
+      console.error('TUT purchase error:', error);
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to complete TUT purchase'
+        : 'Failed to complete TUT purchase';
+      
+      // Provide more helpful error messages
+      if (errorMessage.includes('No TUT token balance found')) {
+        alert('TUT token balance not found. Please ensure you have TUT tokens in your wallet and try again.');
+      } else if (errorMessage.includes('Insufficient TUT balance')) {
+        alert('Insufficient TUT token balance. Please check your token balance and try again.');
+      } else {
+        alert(errorMessage);
+      }
+    }
   };
 
   return (
@@ -291,21 +373,70 @@ export default function Home() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button 
-                  onClick={handleAddToCart}
-                  className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 text-white py-4 px-8 rounded-2xl font-bold text-lg shadow-xl transition-all duration-300 hover:from-green-700 hover:to-blue-700 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-200 flex items-center justify-center gap-3"
-                >
-                  <ShoppingBag className="w-5 h-5" />
-                  Add to Cart
-                </button>
-                <button className="px-8 py-4 border-2 border-green-600 text-green-600 rounded-2xl font-bold text-lg transition-all duration-300 hover:bg-green-600 hover:text-white focus:outline-none focus:ring-4 focus:ring-green-200 flex items-center justify-center gap-3">
-                  <Heart className="w-5 h-5" />
-                  Wishlist
-                </button>
+              <div className="space-y-4">
+                {/* Regular purchase buttons */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button 
+                    onClick={handleAddToCart}
+                    className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 text-white py-4 px-8 rounded-2xl font-bold text-lg shadow-xl transition-all duration-300 hover:from-green-700 hover:to-blue-700 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-200 flex items-center justify-center gap-3"
+                  >
+                    <ShoppingBag className="w-5 h-5" />
+                    Add to Cart
+                  </button>
+                  <button className="px-8 py-4 border-2 border-green-600 text-green-600 rounded-2xl font-bold text-lg transition-all duration-300 hover:bg-green-600 hover:text-white focus:outline-none focus:ring-4 focus:ring-green-200 flex items-center justify-center gap-3">
+                    <Heart className="w-5 h-5" />
+                    Wishlist
+                  </button>
+                </div>
+
+                {/* TUT Purchase Option - Only show for 750ml variant */}
+                {selected.size === '750ml' && selected.tutPrice && (
+                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl p-4 border-2 border-yellow-200">
+                    <div className="text-center mb-3">
+                      <div className="flex items-center justify-center gap-2 text-yellow-700 font-semibold mb-1">
+                        <Coins className="w-5 h-5" />
+                        <span>Redeem with TUT Tokens</span>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        Earned from tree adoption • {selected.tutPrice} TUT tokens
+                      </div>
+                    </div>
+                    
+                    {/* Token Balance Component */}
+                    {user && (
+                      <div className="mb-3">
+                        <TokenBalance 
+                          showRefresh={false} 
+                          className="bg-white/80 border-yellow-200"
+                        />
+                      </div>
+                    )}
+                    
+                    <button 
+                      onClick={handleBuyWithTut}
+                      disabled={!user}
+                      className={`w-full py-3 px-6 rounded-xl font-bold text-lg transition-all duration-300 focus:outline-none focus:ring-4 flex items-center justify-center gap-3 ${
+                        !user
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:from-yellow-600 hover:to-orange-600 hover:scale-105 focus:ring-yellow-200 shadow-lg'
+                      }`}
+                    >
+                      <Coins className="w-5 h-5" />
+                      {!user ? 'Login Required' : 'Buy with TUT'}
+                    </button>
+                    
+                    {!user && (
+                      <div className="text-center mt-2">
+                        <Link to="/auth/login" className="text-sm text-blue-600 hover:text-blue-700 underline">
+                          Login to use TUT tokens
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Success Message */}
+              {/* Success Messages */}
               {showAddedMessage && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -322,6 +453,30 @@ export default function Home() {
                     <div className="ml-3">
                       <p className="text-sm font-medium">
                         Premium Olive Oil {selected.size} added to cart!
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* TUT Purchase Success Message */}
+              {showTutMessage && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg"
+                >
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <Coins className="h-5 w-5 text-yellow-500" />
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium">
+                        🎉 Premium Olive Oil 750ml purchased with TUT tokens! Your order is being processed.
+                      </p>
+                      <p className="text-xs text-yellow-600 mt-1">
+                        {selected.tutPrice} TUT tokens deducted from your balance
                       </p>
                     </div>
                   </div>

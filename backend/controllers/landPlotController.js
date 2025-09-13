@@ -213,6 +213,51 @@ exports.adoptTree = async (req, res) => {
 
     await landPlot.save();
 
+    // Create transaction for TUT token reward
+    const Transaction = require('../models/transaction');
+    const TokenBalance = require('../models/tokenBalance');
+    const User = require('../models/user');
+
+    const transaction = await Transaction.create({
+      user: req.user._id,
+      type: 'adoption',
+      items: [{
+        type: 'tree',
+        item: landPlot._id,
+        quantity: 1,
+        price: landPlot.adoptionPrice
+      }],
+      totalAmount: landPlot.adoptionPrice,
+      paymentMethod: req.body.paymentMethod || 'land_plot_adoption',
+      tokenReward: 22 // Fixed 22 TUT tokens for tree adoption
+    });
+
+    // Add tokens to user's balance
+    let tokenBalance = await TokenBalance.findOne({ user: req.user._id });
+    
+    // If no token balance record exists, create one
+    if (!tokenBalance) {
+      tokenBalance = new TokenBalance({
+        user: req.user._id,
+        balance: 0,
+        transactions: []
+      });
+    }
+    
+    tokenBalance.transactions.push({
+      type: 'reward',
+      amount: 22,
+      description: `Tree adoption reward for ${landPlot.name}`,
+      reference: transaction._id,
+      referenceType: 'Transaction'
+    });
+    await tokenBalance.save();
+
+    // Update user's adopted trees
+    await User.findByIdAndUpdate(req.user._id, {
+      $push: { adoptedTrees: landPlot._id }
+    });
+
     // Populate the adoption data
     await landPlot.populate('adoptions.user', 'name');
 
@@ -221,7 +266,8 @@ exports.adoptTree = async (req, res) => {
       data: {
         landPlot,
         adoption: adoption,
-        treeNumber: treeNumber
+        treeNumber: treeNumber,
+        transaction
       }
     });
   } catch (error) {

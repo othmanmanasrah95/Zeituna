@@ -5,6 +5,7 @@ export interface Product {
   name: string;
   description: string;
   price: number;
+  tutPrice?: number;
   originalPrice?: number;
   images: string[];
   category: 'organic' | 'handmade' | 'eco-friendly' | 'local' | 'olive_oil' | 'handicraft';

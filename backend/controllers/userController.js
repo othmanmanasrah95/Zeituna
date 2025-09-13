@@ -110,6 +110,71 @@ exports.getUserTokenBalance = async (req, res) => {
   }
 };
 
+// @desc    Sync blockchain TUT balance with database
+// @route   POST /api/users/sync-tut-balance
+// @access  Private
+exports.syncTutBalance = async (req, res) => {
+  try {
+    const { blockchainBalance } = req.body;
+    
+    if (typeof blockchainBalance !== 'number' || blockchainBalance < 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid blockchain balance provided'
+      });
+    }
+    
+    let tokenBalance = await TokenBalance.findOne({ user: req.user._id });
+    
+    if (!tokenBalance) {
+      // Create new token balance record
+      tokenBalance = new TokenBalance({
+        user: req.user._id,
+        balance: 0,
+        transactions: []
+      });
+    }
+    
+    // Calculate current database balance
+    const currentDbBalance = tokenBalance.transactions.reduce((total, transaction) => {
+      if (transaction.type === 'reward') {
+        return total + transaction.amount;
+      } else if (transaction.type === 'redemption') {
+        return total - transaction.amount;
+      }
+      return total;
+    }, 0);
+    
+    // If blockchain balance is higher than database balance, add the difference as a reward
+    const balanceDifference = blockchainBalance - currentDbBalance;
+    if (balanceDifference > 0) {
+      tokenBalance.transactions.push({
+        type: 'reward',
+        amount: balanceDifference,
+        description: 'Blockchain balance sync - tokens from external sources',
+        date: new Date()
+      });
+    }
+    
+    await tokenBalance.save();
+    
+    res.json({
+      success: true,
+      data: {
+        message: 'TUT balance synced successfully',
+        blockchainBalance,
+        databaseBalance: currentDbBalance + balanceDifference,
+        syncedAmount: balanceDifference
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
 // Dummy: Get trees the user adopted/planted
 exports.getUserTrees = (req, res) => {
   res.status(200).json({

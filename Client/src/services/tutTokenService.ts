@@ -316,6 +316,28 @@ class TUTTokenService {
   isInitialized(): boolean {
     return this.contract !== null;
   }
+
+  // Sync blockchain balance with backend database
+  async syncBalanceWithBackend(): Promise<{ success: boolean; message: string; syncedAmount?: number }> {
+    try {
+      const balanceData = await this.getBalance();
+      const blockchainBalance = parseFloat(balanceData.formattedBalance);
+      
+      const response = await api.post('/users/sync-tut-balance', {
+        blockchainBalance
+      });
+      
+      return {
+        success: true,
+        message: response.data.data.message,
+        syncedAmount: response.data.data.syncedAmount
+      };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const responseData = (error as { response?: { data?: { message?: string } } })?.response?.data;
+      throw new Error(`Failed to sync balance: ${responseData?.message || errorMessage}`);
+    }
+  }
 }
 
 // Create a singleton instance

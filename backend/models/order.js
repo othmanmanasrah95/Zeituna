@@ -5,7 +5,7 @@ const orderSchema = new mongoose.Schema({
   orderNumber: {
     type: String,
     unique: true,
-    required: true
+    required: false // Auto-generated in pre-save hook
   },
 
   // Customer information
@@ -44,9 +44,17 @@ const orderSchema = new mongoose.Schema({
       type: Number,
       required: true
     },
+    tutPrice: {
+      type: Number,
+      default: null // TUT price if applicable
+    },
     total: {
       type: Number,
       required: true
+    },
+    tutTotal: {
+      type: Number,
+      default: 0 // TUT total if applicable
     }
   }],
 
@@ -54,6 +62,11 @@ const orderSchema = new mongoose.Schema({
   subtotal: {
     type: Number,
     required: true
+  },
+  
+  tutTotal: {
+    type: Number,
+    default: 0 // Total amount in TUT tokens
   },
   
   shipping: {
@@ -80,7 +93,7 @@ const orderSchema = new mongoose.Schema({
   paymentMethod: {
     type: String,
     required: true,
-    enum: ['credit_card', 'debit_card', 'paypal', 'crypto', 'bank_transfer']
+    enum: ['credit_card', 'debit_card', 'paypal', 'crypto', 'bank_transfer', 'tut_tokens']
   },
   
   paymentStatus: {
@@ -186,7 +199,8 @@ const orderSchema = new mongoose.Schema({
 
 // Generate order number before saving
 orderSchema.pre('save', async function(next) {
-  if (this.isNew && !this.orderNumber) {
+  if (this.isNew) {
+    // Always generate order number for new orders
     const count = await mongoose.model('Order').countDocuments();
     this.orderNumber = `ORD-${Date.now()}-${(count + 1).toString().padStart(4, '0')}`;
   }

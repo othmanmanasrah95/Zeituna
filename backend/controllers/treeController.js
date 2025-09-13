@@ -216,7 +216,7 @@ exports.adoptTree = async (req, res) => {
       }],
       totalAmount: tree.adoptionPrice,
       paymentMethod: req.body.paymentMethod,
-      tokenReward: tree.adoptionPrice * 0.33 // 33% of adoption price as tokens
+      tokenReward: 22 // Fixed 22 TUT tokens for tree adoption
     });
 
     // Add user to adopters
@@ -229,7 +229,17 @@ exports.adoptTree = async (req, res) => {
     });
 
     // Add tokens to user's balance
-    const tokenBalance = await TokenBalance.findOne({ user: req.user._id });
+    let tokenBalance = await TokenBalance.findOne({ user: req.user._id });
+    
+    // If no token balance record exists, create one
+    if (!tokenBalance) {
+      tokenBalance = new TokenBalance({
+        user: req.user._id,
+        balance: 0,
+        transactions: []
+      });
+    }
+    
     tokenBalance.transactions.push({
       type: 'reward',
       amount: transaction.tokenReward,
